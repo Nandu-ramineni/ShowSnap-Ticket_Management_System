@@ -1,0 +1,52 @@
+version: '3.9'
+
+services:
+  api:
+    build: { context: .., dockerfile: docker/Dockerfile }
+    container_name: seatsecure-api
+    restart: unless-stopped
+    ports: ['5000:5000']
+    env_file: [../.env]
+    environment:
+      MONGO_URI: mongodb://mongo:27017/seatsecure
+      REDIS_HOST: redis
+    depends_on:
+      mongo:  { condition: service_healthy }
+      redis:  { condition: service_healthy }
+    volumes: ['../logs:/app/logs']
+    networks: [seatsecure]
+
+  mongo:
+    image: mongo:7
+    container_name: seatsecure-mongo
+    restart: unless-stopped
+    ports: ['27017:27017']
+    volumes: [mongo-data:/data/db]
+    healthcheck:
+      test: ['CMD', 'mongosh', '--eval', "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [seatsecure]
+
+  redis:
+    image: redis:7-alpine
+    container_name: seatsecure-redis
+    restart: unless-stopped
+    ports: ['6379:6379']
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes: [redis-data:/data]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks: [seatsecure]
+
+volumes:
+  mongo-data:
+  redis-data:
+
+networks:
+  seatsecure:
+    driver: bridge
