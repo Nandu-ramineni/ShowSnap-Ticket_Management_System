@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import * as authController from './auth.controller.js';
 import { authenticate } from '../../middlewares/auth.middleware.js';
 import { authLimiter } from '../../middlewares/rateLimiter.middleware.js';
-import { validate } from '../../middlewares/validate.middleware.js';
+import { validate } from '../../utils/validate.js';
 import { REGISTERABLE_ROLES } from '../../utils/constants.js';
 
 // ─── Validators ───────────────────────────────────────────────────────────────
