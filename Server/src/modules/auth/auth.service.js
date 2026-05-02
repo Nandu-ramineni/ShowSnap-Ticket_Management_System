@@ -47,9 +47,19 @@ export const register = async ({ name, email, phone, password, role }, meta = {}
     assignedRole === ROLES.THEATRE_OWNER
       ? ACCOUNT_STATUS.PENDING
       : ACCOUNT_STATUS.ACTIVE;
+      
+  const existingUser = await User.findOne({
+    $or: [{ email }, { phone }]
+  });
 
-  if (await User.exists({ email })) {
-    throw ApiError.conflict('Email already registered');
+  if (existingUser) {
+    if (existingUser.email === email) {
+      throw ApiError.conflict('Email already registered');
+    }
+
+    if (existingUser.phone === phone) {
+      throw ApiError.conflict('Phone number already registered');
+    }
   }
 
   const hashed = await bcrypt.hash(password, SALT_ROUNDS);
