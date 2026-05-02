@@ -16,20 +16,28 @@
 //   pattern is simpler and has no attack surface.
 
 
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 import User from '../src/modules/auth/user.model.js';
 import { ROLES, ACCOUNT_STATUS } from '../src/utils/constants.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, MONGODB_URI } = process.env;
+dotenv.config({
+    path: path.resolve(__dirname, '../.env')
+});
+const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NAME, MONGO_URI} = process.env;
+console.log('Seeding admin with:', { ADMIN_EMAIL, ADMIN_NAME, MONGO_URI: MONGO_URI? '***' : null });
 
 if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_NAME) {
     console.error('Missing ADMIN_EMAIL, ADMIN_PASSWORD, or ADMIN_NAME env vars');
     process.exit(1);
 }
 
-await mongoose.connect(MONGODB_URI);
+await mongoose.connect(MONGO_URI);
 
 const existing = await User.findOne({ email: ADMIN_EMAIL });
 if (existing) {
