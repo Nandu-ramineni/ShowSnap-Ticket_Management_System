@@ -9,6 +9,8 @@ const required = [
   'MONGO_URI',
   'JWT_SECRET',
   'JWT_REFRESH_SECRET',
+  'JWT_ISSUER',
+  'JWT_AUDIENCE',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
 ];
@@ -21,9 +23,13 @@ export default {
   NODE_ENV: process.env.NODE_ENV || 'development',
   PORT: parseInt(process.env.PORT, 10) || 5000,
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
-  ALLOWED_ORIGINS: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
 
-  mongo: { uri: process.env.MONGO_URI },
+  ALLOWED_ORIGINS:
+    process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+
+  mongo: {
+    uri: process.env.MONGO_URI,
+  },
 
   redis: {
     host: process.env.REDIS_HOST || 'localhost',
@@ -34,8 +40,12 @@ export default {
   jwt: {
     secret: process.env.JWT_SECRET,
     expiresIn: process.env.JWT_EXPIRES_IN || '1d',
+
     refreshSecret: process.env.JWT_REFRESH_SECRET,
     refreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '30d',
+
+    issuer: process.env.JWT_ISSUER || 'SeatSecure',
+    audience: process.env.JWT_AUDIENCE || 'SeatSecureUsers',
   },
 
   stripe: {
@@ -46,7 +56,8 @@ export default {
   seatLockTtl: parseInt(process.env.SEAT_LOCK_TTL, 10) || 600,
 
   rateLimit: {
-    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
+    windowMs:
+      parseInt(process.env.RATE_LIMIT_WINDOW_MS, 10) || 15 * 60 * 1000,
     max: parseInt(process.env.RATE_LIMIT_MAX, 10) || 100,
   },
 

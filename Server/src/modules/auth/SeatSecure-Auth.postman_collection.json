@@ -1,0 +1,1154 @@
+{
+    "info": {
+        "name": "SeatSecure API — Auth",
+        "_postman_id": "seatsecure-auth-v1",
+        "description": "Complete auth flow for User, Theatre Owner, and Admin.\n\n**Setup**\n1. Import this collection.\n2. Import the `SeatSecure Environment` alongside it.\n3. Run requests in the order shown — scripts auto-fill tokens and IDs.\n\n**⚠️ Before testing Admin routes**\nAdmin routes are mounted in routes.js. Make sure you've added:\n```\nimport adminRoutes from './modules/auth/admin.routes.js';\nrouter.use('/admin', adminRoutes);\n```\nAlso run the seed script to create the first admin account.",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "variable": [
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000/api/v1"
+        },
+        {
+            "key": "userToken",
+            "value": ""
+        },
+        {
+            "key": "userRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "adminToken",
+            "value": ""
+        },
+        {
+            "key": "adminRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "ownerToken",
+            "value": ""
+        },
+        {
+            "key": "ownerRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "pendingOwnerId",
+            "value": ""
+        },
+        {
+            "key": "targetUserId",
+            "value": ""
+        }
+    ],
+    "item": [
+        {
+            "name": "👤 User",
+            "item": [
+                {
+                    "name": "Register — User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('✅ User tokens saved');",
+                                    "}",
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has user object', () => pm.expect(res.data.user).to.be.an('object'));",
+                                    "pm.test('Has accessToken', () => pm.expect(res.data.accessToken).to.be.a('string'));",
+                                    "pm.test('Role is user', () => pm.expect(res.data.user.role).to.eql('user'));",
+                                    "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Arjun Mehta\",\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\",\n  \"phone\": \"+919876543210\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Register — Validation Errors (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has errors array', () => pm.expect(res.errors).to.be.an('array').that.is.not.empty);",
+                                    "pm.test('success is false', () => pm.expect(res.success).to.be.false);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"\",\n  \"email\": \"not-an-email\",\n  \"password\": \"weak\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Register — Duplicate Email (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Arjun Mehta\",\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login — User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('✅ User tokens refreshed');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has both tokens', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.a('string');",
+                                    "  pm.expect(res.data.refreshToken).to.be.a('string');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login — Wrong Password (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"WrongPass@999\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has user data', () => pm.expect(res.data.user).to.be.an('object'));",
+                                    "pm.test('No password in response', () => pm.expect(res.data.user.password).to.be.undefined);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/auth/profile",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Profile — No Token (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/auth/profile"
+                    }
+                },
+                {
+                    "name": "Update Profile",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Name updated', () => pm.expect(res.data.user.name).to.eql('Arjun Kumar Mehta'));",
+                                    "pm.test('City updated', () => pm.expect(res.data.user.preferredCity).to.eql('Mumbai'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/auth/profile",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Arjun Kumar Mehta\",\n  \"preferredCity\": \"Mumbai\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Update Profile — Role Injection Attempt (ignored)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Role NOT changed to admin', () => pm.expect(res.data.user.role).to.eql('user'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/auth/profile",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Arjun\",\n  \"role\": \"admin\",\n  \"isActive\": true,\n  \"accountStatus\": \"active\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Refresh Token",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('✅ Tokens rotated');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('New tokens issued', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.a('string');",
+                                    "  pm.expect(res.data.refreshToken).to.be.a('string');",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/refresh-token",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Change Password",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "console.log('⚠️ All sessions terminated. Re-login to get new tokens.');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/auth/change-password",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"currentPassword\": \"Secret@123\",\n  \"newPassword\": \"NewSecret@456\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Change Password — Wrong Current (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/auth/change-password",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"currentPassword\": \"WrongOld@999\",\n  \"newPassword\": \"NewSecret@456\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Logout",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('userRefreshToken', '');",
+                                    "console.log('✅ Logged out, refresh token cleared');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/logout",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Logout All Sessions",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('userToken', '');",
+                                    "pm.collectionVariables.set('userRefreshToken', '');",
+                                    "console.log('✅ All sessions terminated');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/logout-all",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🎭 Theatre Owner",
+            "item": [
+                {
+                    "name": "Register — Theatre Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Role is theatre_owner', () => pm.expect(res.data.user.role).to.eql('theatre_owner'));",
+                                    "pm.test('accountStatus is pending', () => pm.expect(res.data.user.accountStatus).to.eql('pending'));",
+                                    "pm.test('No tokens issued', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.undefined;",
+                                    "  pm.expect(res.data.refreshToken).to.be.undefined;",
+                                    "});",
+                                    "if (res.data?.user?._id || res.data?.user?.id) {",
+                                    "  const id = res.data.user._id || res.data.user.id;",
+                                    "  pm.collectionVariables.set('pendingOwnerId', id);",
+                                    "  console.log('✅ Pending owner ID saved:', id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Priya Nair\",\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\",\n  \"phone\": \"+919123456789\",\n  \"role\": \"theatre_owner\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Register — Admin Role Injection (expect user, not admin)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Role is user, NOT admin', () => pm.expect(res.data.user.role).to.eql('user'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Hacker\",\n  \"email\": \"hacker@evil.com\",\n  \"password\": \"Hack@1234\",\n  \"role\": \"admin\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login — Pending Owner (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Pending message shown', () => pm.expect(res.message).to.include('under review'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login — Approved Owner (run AFTER admin approves)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('ownerToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('ownerRefreshToken', res.data.refreshToken);",
+                                    "  console.log('✅ Owner tokens saved');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Profile — Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Role is theatre_owner', () => pm.expect(res.data.user.role).to.eql('theatre_owner'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/auth/profile",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🛡️ Admin",
+            "item": [
+                {
+                    "name": "Login — Admin",
+                    "description": "Run the seed script first:\nADMIN_EMAIL=admin@seatsecure.com ADMIN_PASSWORD=Admin@123 ADMIN_NAME=\"System Admin\" node scripts/seed-admin.js",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('adminRefreshToken', res.data.refreshToken);",
+                                    "  console.log('✅ Admin tokens saved');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Role is admin', () => pm.expect(res.data.user.role).to.eql('admin'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"admin@seatsecure.com\",\n  \"password\": \"Admin@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get Pending Approvals",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has users array', () => pm.expect(res.data.users).to.be.an('array'));",
+                                    "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));",
+                                    "if (res.data.users.length > 0) {",
+                                    "  const id = res.data.users[0].id || res.data.users[0]._id;",
+                                    "  pm.collectionVariables.set('pendingOwnerId', id);",
+                                    "  console.log('✅ First pending owner ID saved:', id);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/approvals?page=1&limit=20",
+                            "query": [
+                                {
+                                    "key": "page",
+                                    "value": "1"
+                                },
+                                {
+                                    "key": "limit",
+                                    "value": "20"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Pending Approvals — No Token (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/admin/approvals"
+                    }
+                },
+                {
+                    "name": "Get Pending Approvals — User Token (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/admin/approvals",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Approve Theatre Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));",
+                                    "console.log('✅ Owner approved. Now run Login — Approved Owner.');"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/approve",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Approve Already-Reviewed Owner (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/approve",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Register Second Owner (to reject)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.user) {",
+                                    "  const id = res.data.user.id || res.data.user._id;",
+                                    "  pm.collectionVariables.set('pendingOwnerId', id);",
+                                    "  console.log('✅ Second owner ID saved for rejection test:', id);",
+                                    "}",
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/register",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Raj Malhotra\",\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\",\n  \"phone\": \"+919999988888\",\n  \"role\": \"theatre_owner\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Reject Theatre Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('accountStatus is rejected', () => pm.expect(res.data.user.accountStatus).to.eql('rejected'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/reject",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"Incomplete business registration documents. GST certificate missing.\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Reject — Missing Reason (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/reject",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"reason\": \"\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Login — Rejected Owner (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Rejected message shown', () => pm.expect(res.message).to.include('rejected'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Get All Owners",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has users array', () => pm.expect(res.data.users).to.be.an('array'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/admin/owners",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Owners — Filter by Status (pending)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('All results are pending', () => {",
+                                    "  res.data.users.forEach(u => pm.expect(u.accountStatus).to.eql('pending'));",
+                                    "});"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owners?status=pending",
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "pending"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Get Owners — Invalid Status (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": {
+                            "raw": "{{baseUrl}}/admin/owners?status=godmode",
+                            "query": [
+                                {
+                                    "key": "status",
+                                    "value": "godmode"
+                                }
+                            ]
+                        },
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Suspend User",
+                    "description": "Set targetUserId variable to the user's MongoDB _id before running.",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('isActive is false', () => pm.expect(res.data.user.isActive).to.be.false);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/users/{{targetUserId}}/suspend",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Login — Suspended User (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Suspended message shown', () => pm.expect(res.message).to.include('suspended'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "url": "{{baseUrl}}/auth/login",
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"NewSecret@456\"\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Reactivate User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('isActive is true', () => pm.expect(res.data.user.isActive).to.be.true);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/users/{{targetUserId}}/reactivate",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                },
+                {
+                    "name": "Suspend — Invalid ID (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/admin/users/not-a-mongo-id/suspend",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{adminToken}}"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "🔧 System",
+            "item": [
+                {
+                    "name": "Health Check",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Status is ok', () => pm.expect(res.status).to.eql('ok'));",
+                                    "pm.test('Has timestamp', () => pm.expect(res.timestamp).to.be.a('string'));"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "GET",
+                        "url": "{{baseUrl}}/health"
+                    }
+                }
+            ]
+        }
+    ]
+}
