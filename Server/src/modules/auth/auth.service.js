@@ -1,6 +1,7 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import ms from 'ms'; // FIX: was missing — ms() on line 33 caused ReferenceError at runtime
 import User from './user.model.js';
 import RefreshToken from './refreshToken.model.js';
 import ApiError from '../../utils/ApiError.js';
@@ -30,7 +31,7 @@ const issueRefreshToken = async (userId, userAgent, ip) => {
     tokenHash: hashToken(raw),
     userAgent,
     ip,
-    expiresAt: new Date(Date.now() + ms(env.jwt.refreshExpiresIn)),
+    expiresAt: new Date(Date.now() + ms(env.jwt.refreshExpiresIn)), // ms() now resolvable
     family:    raw.slice(0, 8),
   });
   return raw;
@@ -39,12 +40,9 @@ const issueRefreshToken = async (userId, userAgent, ip) => {
 // ─── Register ─────────────────────────────────────────────────────────────────
 
 export const register = async ({ name, email, phone, password, role }, meta = {}) => {
-  // Validate that the requested role is registerable via public API.
-  // 'admin' is not in REGISTERABLE_ROLES — it can only be created by seed script.
-  const assignedRole = role && REGISTERABLE_ROLES.includes(role) ? role : ROLES.USER;
+  const assignedRole =
+    role && REGISTERABLE_ROLES.includes(role) ? role : ROLES.USER;
 
-  // Theatre owners start in 'pending' state.
-  // Regular users go straight to 'active'.
   const accountStatus =
     assignedRole === ROLES.THEATRE_OWNER
       ? ACCOUNT_STATUS.PENDING
@@ -61,14 +59,8 @@ export const register = async ({ name, email, phone, password, role }, meta = {}
     accountStatus,
   });
 
-  // Theatre owners cannot log in yet — return user data but no tokens.
-  // The frontend should show "your account is under review" instead of
-  // silently logging them in, which would fail on the very next request.
   if (accountStatus === ACCOUNT_STATUS.PENDING) {
-    return {
-      user: user.toPublicJSON(),
-      // No accessToken / refreshToken — account is not usable yet.
-    };
+    return { user: user.toPublicJSON() };
   }
 
   return {
@@ -83,7 +75,6 @@ export const register = async ({ name, email, phone, password, role }, meta = {}
 export const login = async ({ email, password }, meta = {}) => {
   const user = await User.findOne({ email }).select('+password');
 
-  // Always run bcrypt to prevent timing attacks.
   const DUMMY_HASH = '$2b$12$invalidhashfortimingprotectiononly000000000000000000000';
   const passwordMatch = user
     ? await bcrypt.compare(password, user.password)
@@ -93,16 +84,12 @@ export const login = async ({ email, password }, meta = {}) => {
     throw ApiError.unauthorized('Invalid credentials');
   }
 
-  // Check account status BEFORE checking isActive.
-  // Give the user a specific, actionable error for each state.
   if (user.accountStatus === ACCOUNT_STATUS.PENDING) {
     throw ApiError.forbidden('Your account is under review. You will be notified once approved.');
   }
-
   if (user.accountStatus === ACCOUNT_STATUS.REJECTED) {
     throw ApiError.forbidden('Your account application was rejected. Please contact support.');
   }
-
   if (!user.isActive) {
     throw ApiError.forbidden('Account has been suspended. Please contact support.');
   }

@@ -1,16 +1,16 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
-import { authenticate } from '../../middlewares/auth.middleware.js';
-import { authorize } from '../../middlewares/authorize.middleware.js';
-import { validate } from '../../middlewares/validate.middleware.js';
+// FIX: was importing authorize from '../../middlewares/authorize.middleware.js'
+//      — that file doesn't exist. authorize is already exported from auth.middleware.js.
+import { authenticate, authorize } from '../../middlewares/auth.middleware.js';
+// FIX: was importing validate from '../../middlewares/validate.middleware.js'
+//      — that file doesn't exist. validate lives in utils/validate.js.
+import { validate } from '../../utils/validate.js';
 import { ROLES, ACCOUNT_STATUS } from '../../utils/constants.js';
 import * as adminService from './admin.service.js';
 
 const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-// All admin routes require: (1) valid JWT, (2) role === 'admin'.
-// Splitting into two middlewares is intentional — authenticate handles
-// token verification, authorize handles RBAC. They're separate concerns.
 const adminGuard = [authenticate, authorize(ROLES.ADMIN)];
 
 const router = Router();
@@ -35,6 +35,8 @@ const router = Router();
  *     responses:
  *       200:
  *         description: Paginated list of pending owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
  *         $ref: '#/components/responses/Forbidden'
  */
@@ -71,6 +73,10 @@ router.get(
  *     responses:
  *       200:
  *         description: Account approved
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  *       409:
@@ -110,17 +116,24 @@ router.patch(
  *             properties:
  *               reason:
  *                 type: string
- *                 example: "Incomplete business registration documents"
+ *                 example: Incomplete business registration documents
  *     responses:
  *       200:
  *         description: Account rejected
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         description: Already reviewed
  */
 router.patch(
     '/approvals/:userId/reject',
     adminGuard,
     [
         param('userId').isMongoId().withMessage('Invalid user ID'),
-        // Require a reason — vague rejections cause support tickets.
         body('reason')
             .trim()
             .notEmpty().withMessage('Rejection reason is required')
@@ -149,6 +162,19 @@ router.patch(
  *         schema:
  *           type: string
  *           enum: [pending, active, rejected]
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of theatre owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
 router.get(
     '/owners',
@@ -157,8 +183,8 @@ router.get(
         query('status').optional()
             .isIn(Object.values(ACCOUNT_STATUS))
             .withMessage(`status must be one of: ${Object.values(ACCOUNT_STATUS).join(', ')}`),
-        query('page').optional().isInt({ min: 1 }),
-        query('limit').optional().isInt({ min: 1, max: 100 }),
+        query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+        query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
     ],
     validate,
     asyncHandler(async (req, res) => {
@@ -175,8 +201,24 @@ router.get(
  * @swagger
  * /admin/users/{userId}/suspend:
  *   patch:
- *     summary: Suspend or reactivate any user account
+ *     summary: Suspend a user account and revoke all their sessions
  *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Account suspended
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  */
 router.patch(
     '/users/:userId/suspend',
@@ -189,6 +231,29 @@ router.patch(
     })
 );
 
+/**
+ * @swagger
+ * /admin/users/{userId}/reactivate:
+ *   patch:
+ *     summary: Reactivate a suspended user account
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Account reactivated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
 router.patch(
     '/users/:userId/reactivate',
     adminGuard,

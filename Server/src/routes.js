@@ -9,6 +9,7 @@ import showtimeRoutes  from './modules/showtimes/showtime.routes.js';
 import seatRoutes      from './modules/seats/seat.routes.js';
 import bookingRoutes   from './modules/bookings/booking.routes.js';
 import reviewRoutes    from './modules/reviews/review.routes.js';
+import adminRoutes     from './modules/auth/admin.routes.js';
 import { handleWebhook } from './modules/payments/payment.webhook.js';
 
 const router = Router();
@@ -18,7 +19,7 @@ router.post('/payments/webhook', express.raw({ type: 'application/json' }), hand
 
 // ─── Auth ────────────────────────────────────────────────────
 router.use('/auth', authRoutes);
-
+router.use('/admin', adminRoutes);
 // ─── Movies + nested resources ───────────────────────────────
 router.use('/movies', movieRoutes);
 router.use('/movies/:movieId/reviews',   reviewRoutes);
