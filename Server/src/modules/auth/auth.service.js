@@ -37,6 +37,12 @@ const issueRefreshToken = async (userId, userAgent, ip) => {
   return raw;
 };
 
+// ─── Cache helpers ────────────────────────────────────────────────────────────
+// Profile cache TTL: 5 minutes. Short enough that stale data is never a real
+// problem; long enough to absorb repeated profile fetches from the frontend.
+const PROFILE_TTL = 300;
+const profileCacheKey = (userId) => `${REDIS_KEYS.USER_PROFILE}${userId}`;
+
 // ─── Register ─────────────────────────────────────────────────────────────────
 
 export const register = async ({ name, email, phone, password, role }, meta = {}) => {
