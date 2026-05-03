@@ -1,102 +1,84 @@
-'use client'
+'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
-import { AuthContextType, TheatreOwner } from '@/lib/types/auth'
+/**
+ * Auth context — thin wrapper around Redux auth state.
+ * All components that previously called `useAuth()` continue to work
+ * unchanged; internally it reads from/dispatches to Redux instead of Supabase.
+ */
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+import { createContext, useContext, ReactNode } from 'react';
+import { useAppDispatch, useAppSelector } from '@/redux/hooks';
+import { Client_Login, Client_Logout, Client_Register } from '@/redux/Actions/auth.actions';
+import { clearError } from '@/redux/Reducers/auth.reducers';
+import type { AuthUser } from '@/lib/types/auth';
 
-export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<TheatreOwner | null>(null)
-  const [loading, setLoading] = useState(true)
-  const supabase = createClient()
+interface AuthContextType {
+  user: AuthUser | null;
+  isAuthenticated: boolean;
+  loading: boolean;
+  error: string | null;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    phone?: string
+  ) => Promise<void>;
+  signOut: () => Promise<void>;
+  clearAuthError: () => void;
+}
 
-  useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (session?.user) {
-          // Fetch theatre owner details
-          const { data: ownerData } = await supabase
-            .from('theatre_owners')
-            .select('*')
-            .eq('user_id', session.user.id)
-            .single()
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-          setUser({
-            ...session.user,
-            theatre_owner_id: ownerData?.id,
-            role: ownerData?.role,
-            theatre_ids: [],
-          })
-        } else {
-          setUser(null)
-        }
-        setLoading(false)
-      }
-    )
-
-    return () => {
-      subscription?.unsubscribe()
-    }
-  }, [supabase])
-
-  const signUp = async (email: string, password: string, theatreName: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    })
-
-    if (error) throw error
-
-    if (data.user) {
-      // Create theatre owner record
-      const { error: ownerError } = await supabase
-        .from('theatre_owners')
-        .insert({
-          user_id: data.user.id,
-          name: theatreName,
-          email: data.user.email,
-          role: 'owner',
-        })
-
-      if (ownerError) throw ownerError
-    }
-  }
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const dispatch = useAppDispatch();
+  const { user, isAuthenticated, loading, error } = useAppSelector(
+    (state) => state.auth
+  );
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    await dispatch(Client_Login({ email, password }) as any);
+  };
 
-    if (error) throw error
-  }
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    phone?: string
+  ) => {
+    await dispatch(
+      Client_Register({ name, email, password, phone }) as any
+    );
+  };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut()
-    if (error) throw error
-  }
+    await dispatch(Client_Logout() as any);
+  };
+
+  const clearAuthError = () => dispatch(clearError());
 
   return (
     <AuthContext.Provider
       value={{
         user,
+        isAuthenticated,
         loading,
+        error,
         signIn,
         signUp,
         signOut,
-        isAuthenticated: !!user,
+        clearAuthError,
       }}
     >
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
-export function useAuth() {
-  const context = useContext(AuthContext)
-  if (context === undefined) {
-    throw new Error('useAuth must be used within AuthProvider')
+export function useAuth(): AuthContextType {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context
+  return context;
 }

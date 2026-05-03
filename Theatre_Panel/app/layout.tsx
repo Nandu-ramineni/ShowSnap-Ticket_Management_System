@@ -38,9 +38,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body
-        className={`${geist.className} ${geistMono.variable} font-sans antialiased`}
-      >
+      <body className={`${geist.className} ${geistMono} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster />
