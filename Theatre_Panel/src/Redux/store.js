@@ -1,21 +1,26 @@
-import { createStore, combineReducers, applyMiddleware, compose } from 'redux';
-import { thunk } from 'redux-thunk';
-import authReducer from './Reducers/authReducer';
+/**
+ * Redux/store.js
+ *
+ * Uses Redux Toolkit's configureStore which:
+ *   ✔ Bundles redux-thunk automatically — no need for the separate package
+ *   ✔ Enables Redux DevTools in development out of the box
+ *   ✔ Adds the serializability middleware to catch accidental non-serializable
+ *     values (Dates, Promises, class instances) in state or actions
+ *   ✔ Deprecates the old createStore / applyMiddleware / compose ceremony
+ *
+ * No other files need to change — the store shape (state.auth) is identical.
+ */
 
-const rootReducer = combineReducers({
-    auth: authReducer,
+import { configureStore } from '@reduxjs/toolkit';
+import authReducer        from './Reducers/authReducer';
+
+const store = configureStore({
+    reducer: {
+        auth: authReducer,
+    },
+    // devTools is automatically enabled in development and disabled in production
+    // by configureStore — no manual compose() dance needed.
+    devTools: import.meta.env.DEV,
 });
-
-// Enable Redux DevTools in development
-const composeEnhancers =
-    (typeof window !== 'undefined' &&
-        process.env.NODE_ENV === 'development' &&
-        window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__) ||
-    compose;
-
-const store = createStore(
-    rootReducer,
-    composeEnhancers(applyMiddleware(thunk))
-);
 
 export default store;
