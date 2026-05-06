@@ -1,132 +1,87 @@
-/**
- * Redux/Actions/authActions.js
- *
- * All network calls go through the shared axiosInstance which already:
- *   • sets withCredentials: true  (HttpOnly cookies sent automatically)
- *   • sets Content-Type / Accept headers
- *   • normalises error messages in its response interceptor
- *
- * Action files therefore only contain dispatch logic — zero HTTP plumbing.
- */
+import Cookies from 'js-cookie';
+import api from '@/lib/axiosInstance';
+import * as ActionTypes from '../Constants/authConstants';
 
-import axiosInstance from '@/lib/axiosInstance';
-import {
-    AUTH_LOGIN_REQUEST,
-    AUTH_LOGIN_SUCCESS,
-    AUTH_LOGIN_FAILURE,
-    AUTH_SIGNUP_REQUEST,
-    AUTH_SIGNUP_SUCCESS,
-    AUTH_SIGNUP_FAILURE,
-    AUTH_LOGOUT,
-    AUTH_CLEAR_ERROR,
-    AUTH_HYDRATE_REQUEST,
-    AUTH_HYDRATE_SUCCESS,
-    AUTH_HYDRATE_FAILURE,
-} from '../Constants/authConstants';
+// ─── Cookie options ───────────────────────────────────────────────────────────
+const cookieOptions = (days) => ({
+    expires: days,
+    secure: window.location.protocol === 'https:',
+    sameSite: 'Strict',
+});
 
-// ── Session hydration ────────────────────────────────────────────────────────
-/**
- * Called once on app boot from AuthContext.
- * GET /auth/me — the server validates the HttpOnly cookie and returns the
- * user object if the session is still alive.
- * This is the ONLY mechanism to restore auth state after a hard refresh.
- * No localStorage, no manual cookie reads.
- */
-export const hydrateSession = () => async (dispatch) => {
-    dispatch({ type: AUTH_HYDRATE_REQUEST });
-    try {
-        const { data } = await axiosInstance.get('/auth/me');
-
-        if (data.success && data.data?.user) {
-            dispatch({ type: AUTH_HYDRATE_SUCCESS, payload: { user: data.data.user } });
-        } else {
-            dispatch({ type: AUTH_HYDRATE_FAILURE });
-        }
-    } catch {
-        // 401 or network error — no active session, that is fine
-        dispatch({ type: AUTH_HYDRATE_FAILURE });
-    }
-};
-
-// ── Login ────────────────────────────────────────────────────────────────────
+// ─── Login ────────────────────────────────────────────────────────────────────
 /**
  * POST /auth/login
- * The server validates credentials and responds by:
- *   1. Setting HttpOnly accessToken + refreshToken cookies
- *   2. Returning the user profile in the body
- * We store only the user profile in Redux — tokens never touch JS land.
- *
- * Returns { success: boolean, message?: string } so the Login component
- * can react to the outcome without reading Redux state in a callback.
+ * On success  : stores tokens in cookies + user in localStorage, dispatches SUCCESS
+ * On failure  : dispatches FAILURE with the server error message
  */
-export const loginUser = (credentials) => async (dispatch) => {
-    dispatch({ type: AUTH_LOGIN_REQUEST });
+export const login = (email, password) => async (dispatch) => {
     try {
-        const { data } = await axiosInstance.post('/auth/login', credentials);
+        dispatch({ type: ActionTypes.AUTH_LOGIN_REQUEST });
 
-        if (!data.success) {
-            const msg = data.message || 'Login failed. Please try again.';
-            dispatch({ type: AUTH_LOGIN_FAILURE, payload: msg });
-            return { success: false, message: msg };
-        }
+        const { data } = await api.post('/auth/login', { email, password });
+        const { accessToken, refreshToken, user } = data.data;
 
-        dispatch({ type: AUTH_LOGIN_SUCCESS, payload: { user: data.data.user } });
-        return { success: true };
+        // ── Persist tokens ──────────────────────────────────────────────────
+        Cookies.set('accessToken', accessToken, cookieOptions(1));     // 1 day
+        Cookies.set('refreshToken', refreshToken, cookieOptions(7));   // 7 days
 
+        // ── Persist user for hydration across page refreshes ────────────────
+        localStorage.setItem('authUser', JSON.stringify(user));
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGIN_SUCCESS,
+            payload: user,
+        });
     } catch (error) {
-        const message = error.message || 'Network error. Please try again.';
-        dispatch({ type: AUTH_LOGIN_FAILURE, payload: message });
-        return { success: false, message };
+        dispatch({
+            type: ActionTypes.AUTH_LOGIN_FAILURE,
+            payload:
+                error.response?.data?.message ||
+                'Login failed. Please check your credentials and try again.',
+        });
     }
 };
 
-// ── Signup ───────────────────────────────────────────────────────────────────
+// ─── Logout ───────────────────────────────────────────────────────────────────
 /**
- * POST /auth/signup
- * On success the user is NOT automatically logged in — they are redirected
- * to /login so they go through the explicit login flow (matches most UX
- * patterns and avoids auto-issuing a session on fresh accounts).
- * Adjust the reducer / component if your backend auto-logs-in on signup.
+ * Clears cookies, localStorage, and resets Redux state.
+ * Optionally call the server-side logout endpoint if one exists.
  */
-export const signupUser = (userData) => async (dispatch) => {
-    dispatch({ type: AUTH_SIGNUP_REQUEST });
-    try {
-        const { data } = await axiosInstance.post('/auth/signup', userData);
+export const logout = () => (dispatch) => {
+    Cookies.remove('accessToken');
+    Cookies.remove('refreshToken');
+    localStorage.removeItem('authUser');
+    dispatch({ type: ActionTypes.AUTH_LOGOUT });
+};
 
-        if (!data.success) {
-            const msg = data.message || 'Signup failed. Please try again.';
-            dispatch({ type: AUTH_SIGNUP_FAILURE, payload: msg });
-            return { success: false, message: msg };
+// ─── Hydrate session on page refresh ─────────────────────────────────────────
+/**
+ * Called once in App.jsx on mount.
+ * Restores Redux auth state from the access-token cookie + localStorage user,
+ * so the user stays logged in across hard refreshes without an extra API round-trip.
+ */
+export const hydrateAuth = () => (dispatch) => {
+    dispatch({ type: ActionTypes.AUTH_HYDRATE_REQUEST });
+
+    const token = Cookies.get('accessToken');
+    const raw = localStorage.getItem('authUser');
+
+    if (token && raw) {
+        try {
+            const user = JSON.parse(raw);
+            dispatch({ type: ActionTypes.AUTH_HYDRATE_SUCCESS, payload: user });
+        } catch {
+            // Corrupt localStorage — force a clean state
+            Cookies.remove('accessToken');
+            Cookies.remove('refreshToken');
+            localStorage.removeItem('authUser');
+            dispatch({ type: ActionTypes.AUTH_HYDRATE_FAILURE });
         }
-
-        dispatch({ type: AUTH_SIGNUP_SUCCESS });
-        return { success: true };
-
-    } catch (error) {
-        const message = error.message || 'Network error. Please try again.';
-        dispatch({ type: AUTH_SIGNUP_FAILURE, payload: message });
-        return { success: false, message };
+    } else {
+        dispatch({ type: ActionTypes.AUTH_HYDRATE_FAILURE });
     }
 };
 
-// ── Logout ───────────────────────────────────────────────────────────────────
-/**
- * POST /auth/logout
- * Tells the server to clear / invalidate the HttpOnly cookies server-side.
- * We dispatch AUTH_LOGOUT regardless of the server response — if the server
- * is down the user should still be able to leave the authenticated state
- * on the client.
- */
-export const logoutUser = () => async (dispatch) => {
-    try {
-        await axiosInstance.post('/auth/logout');
-    } catch {
-        // Server error or offline — intentionally swallowed.
-        // Client state must still be cleared so the user is not stuck.
-    } finally {
-        dispatch({ type: AUTH_LOGOUT });
-    }
-};
-
-// ── Misc ─────────────────────────────────────────────────────────────────────
-export const clearAuthError = () => ({ type: AUTH_CLEAR_ERROR });
+// ─── Clear error banner ───────────────────────────────────────────────────────
+export const clearAuthError = () => ({ type: ActionTypes.AUTH_CLEAR_ERROR });

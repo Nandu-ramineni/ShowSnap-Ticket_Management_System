@@ -32,7 +32,7 @@ export default defineConfig([
 
       // Optional tweaks
       'react/react-in-jsx-scope': 'off', // React 17+
-      'react-refresh/only-export-components': 'warn',
+
     },
 
     settings: {

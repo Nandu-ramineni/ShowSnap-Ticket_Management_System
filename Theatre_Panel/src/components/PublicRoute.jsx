@@ -1,20 +1,19 @@
 /**
- * ProtectedRoute.jsx
+ * PublicRoute.jsx
  *
- * Guards routes that require authentication.
+ * Wraps pages that should NOT be accessible once authenticated
+ * (login, signup, forgot-password …).
  *
  * Render logic:
- *  isHydrating === true  → show full-screen spinner (avoid flash-redirect on
- *                          page refresh before cookies have been read)
- *  isAuthenticated       → render children
- *  else                  → redirect to /login (replace so back-button works)
+ *  isHydrating === true  → show full-screen spinner (same guard as ProtectedRoute)
+ *  isAuthenticated       → redirect to /dashboard
+ *  else                  → render children (the public page)
  */
 
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { selectIsAuthenticated, selectIsHydrating } from '@/Redux/Selectors/authSelectors';
 
-// Minimal full-screen spinner — no extra dependencies required
 const FullScreenSpinner = () => (
     <div
         role="status"
@@ -30,12 +29,12 @@ const FullScreenSpinner = () => (
         <svg
             width="36" height="36"
             viewBox="0 0 24 24" fill="none"
-            stroke="url(#grad)" strokeWidth="2.5"
+            stroke="url(#grad2)" strokeWidth="2.5"
             style={{ animation: 'spin 0.8s linear infinite' }}
             aria-hidden="true"
         >
             <defs>
-                <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
                     <stop offset="0%"   stopColor="#e84393" />
                     <stop offset="100%" stopColor="#7c3aed" />
                 </linearGradient>
@@ -46,13 +45,13 @@ const FullScreenSpinner = () => (
     </div>
 );
 
-const ProtectedRoute = ({ children }) => {
+const PublicRoute = ({ children }) => {
     const isHydrating     = useSelector(selectIsHydrating);
     const isAuthenticated = useSelector(selectIsAuthenticated);
 
     if (isHydrating)     return <FullScreenSpinner />;
-    if (isAuthenticated) return children;
-    return <Navigate to="/login" replace />;
+    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+    return children;
 };
 
-export default ProtectedRoute;
+export default PublicRoute;

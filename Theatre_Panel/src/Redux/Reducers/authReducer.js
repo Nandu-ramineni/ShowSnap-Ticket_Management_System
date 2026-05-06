@@ -1,89 +1,97 @@
-import {
-    AUTH_LOGIN_REQUEST,
-    AUTH_LOGIN_SUCCESS,
-    AUTH_LOGIN_FAILURE,
-    AUTH_SIGNUP_REQUEST,
-    AUTH_SIGNUP_SUCCESS,
-    AUTH_SIGNUP_FAILURE,
-    AUTH_LOGOUT,
-    AUTH_CLEAR_ERROR,
-    AUTH_HYDRATE_REQUEST,
-    AUTH_HYDRATE_SUCCESS,
-    AUTH_HYDRATE_FAILURE,
-} from '../Constants/authConstants';
+import * as ActionTypes from '../Constants/authConstants';
 
 /**
- * IMPORTANT: We do NOT touch localStorage or sessionStorage here.
- * The server issues HttpOnly cookies (accessToken, refreshToken) on login.
- * The browser attaches them automatically on every request via credentials:'include'.
- * Redux only holds in-memory user data + derived auth state — nothing sensitive.
+ * State shape matches every selector in authSelectors.js:
+ *
+ *   selectIsAuthenticated  → state.auth.isAuthenticated
+ *   selectCurrentUser      → state.auth.user
+ *   selectAuthLoading      → state.auth.isLoading
+ *   selectIsHydrating      → state.auth.isHydrating
+ *   selectAuthError        → state.auth.error
+ *   selectSignupSuccess    → state.auth.signupSuccess
  */
 const initialState = {
-    user:          null,    // populated after login or /me hydration
+    isHydrating: true,       // true until hydrateAuth() completes on app boot
+    isLoading: false,        // true during login / signup API calls
     isAuthenticated: false,
-    isLoading:     false,   // login / signup in-flight
-    isHydrating:   true,    // true until /me check resolves on app boot
-    error:         null,
+    user: null,
+    error: null,
     signupSuccess: false,
 };
 
-const authReducer = (state = initialState, action) => {
+export const authReducer = (state = initialState, action) => {
     switch (action.type) {
 
-        // ── Login ────────────────────────────────────────────────────────────
-        case AUTH_LOGIN_REQUEST:
-            return { ...state, isLoading: true, error: null, signupSuccess: false };
+        // ── Login ─────────────────────────────────────────────────────────────
+        case ActionTypes.AUTH_LOGIN_REQUEST:
+            return { ...state, isLoading: true, error: null };
 
-        case AUTH_LOGIN_SUCCESS:
+        case ActionTypes.AUTH_LOGIN_SUCCESS:
             return {
                 ...state,
-                isLoading:       false,
+                isLoading: false,
                 isAuthenticated: true,
-                user:            action.payload.user,
-                error:           null,
+                user: action.payload,
+                error: null,
             };
 
-        case AUTH_LOGIN_FAILURE:
-            return { ...state, isLoading: false, isAuthenticated: false, error: action.payload };
+        case ActionTypes.AUTH_LOGIN_FAILURE:
+            return {
+                ...state,
+                isLoading: false,
+                isAuthenticated: false,
+                user: null,
+                error: action.payload,
+            };
 
-        // ── Signup ───────────────────────────────────────────────────────────
-        case AUTH_SIGNUP_REQUEST:
+        // ── Signup ────────────────────────────────────────────────────────────
+        case ActionTypes.AUTH_SIGNUP_REQUEST:
             return { ...state, isLoading: true, error: null, signupSuccess: false };
 
-        case AUTH_SIGNUP_SUCCESS:
+        case ActionTypes.AUTH_SIGNUP_SUCCESS:
             return { ...state, isLoading: false, signupSuccess: true, error: null };
 
-        case AUTH_SIGNUP_FAILURE:
-            return { ...state, isLoading: false, error: action.payload };
+        case ActionTypes.AUTH_SIGNUP_FAILURE:
+            return { ...state, isLoading: false, signupSuccess: false, error: action.payload };
 
-        // ── Session hydration on boot (/me) ──────────────────────────────────
-        case AUTH_HYDRATE_REQUEST:
+        // ── Hydration (restoring session on page refresh) ─────────────────────
+        case ActionTypes.AUTH_HYDRATE_REQUEST:
             return { ...state, isHydrating: true };
 
-        case AUTH_HYDRATE_SUCCESS:
+        case ActionTypes.AUTH_HYDRATE_SUCCESS:
             return {
                 ...state,
-                isHydrating:     false,
+                isHydrating: false,
                 isAuthenticated: true,
-                user:            action.payload.user,
-                error:           null,
+                user: action.payload,
+                error: null,
             };
 
-        case AUTH_HYDRATE_FAILURE:
-            // No active session — that's fine, not an error
-            return { ...state, isHydrating: false, isAuthenticated: false, user: null };
+        case ActionTypes.AUTH_HYDRATE_FAILURE:
+            return {
+                ...state,
+                isHydrating: false,
+                isAuthenticated: false,
+                user: null,
+            };
 
-        // ── Logout ───────────────────────────────────────────────────────────
-        case AUTH_LOGOUT:
-            return { ...initialState, isHydrating: false };
+        // ── Token refreshed (axios interceptor updates store) ─────────────────
+        case ActionTypes.AUTH_TOKEN_REFRESHED:
+            // Optionally update user if new data is returned
+            return state;
 
-        // ── Misc ─────────────────────────────────────────────────────────────
-        case AUTH_CLEAR_ERROR:
+        // ── Logout ────────────────────────────────────────────────────────────
+        case ActionTypes.AUTH_LOGOUT:
+            return {
+                ...initialState,
+                isHydrating: false, // prevent re-hydration loop after logout
+            };
+
+        // ── Misc ──────────────────────────────────────────────────────────────
+        case ActionTypes.AUTH_CLEAR_ERROR:
             return { ...state, error: null };
 
         default:
             return state;
     }
 };
-
-export default authReducer;
