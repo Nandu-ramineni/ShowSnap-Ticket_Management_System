@@ -16,42 +16,9 @@ const app = express();
 app.set('trust proxy', 1);
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-/**
- * WHY NOT origin: '*' WITH credentials: true
- * ─────────────────────────────────────────
- * The Fetch spec (and every browser) forbids credentialed requests
- * (cookies, Authorization headers) when Access-Control-Allow-Origin is '*'.
- * The browser will hard-block the response even if the server sends it.
- *
- * The fix: always reflect an explicit allowlist, in dev AND prod.
- * ALLOWED_ORIGINS in .env is the single source of truth for both environments.
- *
- * .env:
- *   ALLOWED_ORIGINS=http://localhost:3000,http://localhost:5173
- */
-const allowedOrigins = Array.isArray(env.ALLOWED_ORIGINS)
-    ? env.ALLOWED_ORIGINS.map((o) => o.trim()).filter(Boolean)
-    : typeof env.ALLOWED_ORIGINS === 'string'
-        ? env.ALLOWED_ORIGINS.split(',').map((o) => o.trim()).filter(Boolean)
-        : [];
-
 app.use(cors({
-    origin: (requestOrigin, callback) => {
-        // Allow non-browser callers (curl, Postman, server-to-server, Swagger)
-        // that send no Origin header at all.
-        if (!requestOrigin) return callback(null, true);
-
-        if (allowedOrigins.includes(requestOrigin)) {
-            return callback(null, true);
-        }
-
-        callback(new Error(`CORS: origin '${requestOrigin}' is not allowed`));
-    },
-    credentials   : true,    // allows the browser to send HttpOnly cookies
-    methods        : ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders : ['Content-Type', 'Accept'],
-    exposedHeaders : [],      // add any custom headers the client needs to read
-    maxAge         : 86_400,  // preflight cache: 24 h — reduces OPTIONS round-trips
+    origin: ["http://localhost:5173"],
+    credentials: true,
 }));
 
 // ─── Security ─────────────────────────────────────────────────────────────────
