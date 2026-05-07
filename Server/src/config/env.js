@@ -13,6 +13,9 @@ const required = [
   'JWT_AUDIENCE',
   'STRIPE_SECRET_KEY',
   'STRIPE_WEBHOOK_SECRET',
+  'CLOUDINARY_CLOUD_NAME',
+  'CLOUDINARY_API_KEY',
+  'CLOUDINARY_API_SECRET',
 ];
 
 required.forEach((key) => {
@@ -51,6 +54,12 @@ export default {
   stripe: {
     secretKey: process.env.STRIPE_SECRET_KEY,
     webhookSecret: process.env.STRIPE_WEBHOOK_SECRET,
+  },
+
+  cloudinary: {
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME,
+    apiKey: process.env.CLOUDINARY_API_KEY,
+    apiSecret: process.env.CLOUDINARY_API_SECRET,
   },
 
   seatLockTtl: parseInt(process.env.SEAT_LOCK_TTL, 10) || 600,

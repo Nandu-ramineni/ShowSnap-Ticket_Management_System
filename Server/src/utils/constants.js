@@ -83,3 +83,12 @@ export const PAGINATION = Object.freeze({
   DEFAULT_LIMIT: 20,
   MAX_LIMIT:     100,
 });
+// Onboarding lifecycle — tracks post-approval profile completion for TheatreOwner.
+// pending_onboarding → owner approved but onboarding form not yet submitted.
+// in_progress        → owner saved partial onboarding data (auto-set on first save).
+// completed          → all required onboarding fields filled; owner is fully operational.
+export const ONBOARDING_STATUS = Object.freeze({
+  PENDING_ONBOARDING: 'pending_onboarding',
+  IN_PROGRESS:        'in_progress',
+  COMPLETED:          'completed',
+});
