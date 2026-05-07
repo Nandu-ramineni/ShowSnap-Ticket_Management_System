@@ -2,6 +2,7 @@ import { Router } from 'express';
 import express from 'express';
 
 import authRoutes      from './modules/auth/auth.routes.js';
+import theatreOwnerRoutes from './modules/auth/theatreOwner.routes.js';
 import movieRoutes     from './modules/movies/movie.routes.js';
 import theatreRoutes   from './modules/theatres/theatre.routes.js';
 import screenRoutes    from './modules/screens/screen.routes.js';
@@ -19,6 +20,7 @@ router.post('/payments/webhook', express.raw({ type: 'application/json' }), hand
 
 // ─── Auth ────────────────────────────────────────────────────
 router.use('/auth', authRoutes);
+router.use('/theatre-owner', theatreOwnerRoutes);
 router.use('/admin', adminRoutes);
 // ─── Movies + nested resources ───────────────────────────────
 router.use('/movies', movieRoutes);

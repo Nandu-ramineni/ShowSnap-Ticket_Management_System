@@ -1,102 +1,385 @@
 import { Router } from 'express';
-import { body } from 'express-validator';
-import * as authController from './auth.controller.js';
-import { authenticate } from '../../middlewares/auth.middleware.js';
-import { authLimiter } from '../../middlewares/rateLimiter.middleware.js';
+import { body, param, query } from 'express-validator';
+// FIX: was importing authorize from '../../middlewares/authorize.middleware.js'
+//      — that file doesn't exist. authorize is already exported from auth.middleware.js.
+import { authenticate, authorize } from '../../middlewares/auth.middleware.js';
+// FIX: was importing validate from '../../middlewares/validate.middleware.js'
+//      — that file doesn't exist. validate lives in utils/validate.js.
 import { validate } from '../../utils/validate.js';
-import { REGISTERABLE_ROLES } from '../../utils/constants.js';
+import { ROLES, ACCOUNT_STATUS } from '../../utils/constants.js';
+import * as adminService from './admin.service.js';
 
-// ─── Validators ───────────────────────────────────────────────────────────────
+const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
 
-const PASSWORD_COMPLEXITY =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>/?])/;
-
-const validators = {
-  name: body('name')
-    .trim()
-    .notEmpty().withMessage('Name is required')
-    .isLength({ max: 100 }).withMessage('Name must be 100 chars or fewer'),
-
-  email: body('email')
-    .isEmail().withMessage('Valid email required')
-    .normalizeEmail(),
-
-  phone: body('phone')
-    .optional({ nullable: true })
-    .isMobilePhone().withMessage('Valid phone number required'),
-
-  password: body('password')
-    .isLength({ min: 8 }).withMessage('Password must be at least 8 characters')
-    .matches(PASSWORD_COMPLEXITY)
-    .withMessage('Password must contain uppercase, lowercase, number, and special character'),
-
-  newPassword: body('newPassword')
-    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters')
-    .matches(PASSWORD_COMPLEXITY)
-    .withMessage('New password must contain uppercase, lowercase, number, and special character'),
-
-  currentPassword: body('currentPassword')
-    .notEmpty().withMessage('Current password is required'),
-
-  refreshToken: body('refreshToken')
-    .notEmpty().withMessage('Refresh token is required'),
-
-  role: body('role')
-    .optional()
-    .isIn(REGISTERABLE_ROLES)
-    .withMessage(`role must be one of: ${REGISTERABLE_ROLES.join(', ')}`),
-};
+const adminGuard = [authenticate, authorize(ROLES.ADMIN)];
 
 const router = Router();
 
-// ─── Routes ───────────────────────────────────────────────────────────────────
+// ─── Approval queue ───────────────────────────────────────────────────────────
 
 /**
  * @swagger
- * tags:
- *   name: Auth
- *   description: Authentication and user profile management
+ * /admin/approvals:
+ *   get:
+ *     summary: List theatre owners awaiting approval
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of pending owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  */
+router.get(
+    '/approvals',
+    adminGuard,
+    [
+        query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+        query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const data = await adminService.getPendingApprovals({
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 20,
+        });
+        res.json({ success: true, data });
+    })
+);
 
 /**
  * @swagger
- * /auth/register:
- *   post:
- *     summary: Register a new user or theatre owner
- *     description: >
- *       Creates a new account. Regular users (`role: user`) are activated
- *       immediately and receive tokens. Theatre owners (`role: theatre_owner`)
- *       are created with `accountStatus: pending` and receive **no tokens** —
- *       they must wait for admin approval before they can log in.
- *       The `admin` role cannot be self-assigned; use the seed script.
- *     tags: [Auth]
- *     x-rateLimit: authLimiter
+ * /admin/approvals/{userId}/approve:
+ *   patch:
+ *     summary: Approve a theatre owner's account
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Account approved
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         description: Already reviewed
+ */
+router.patch(
+    '/approvals/:userId/approve',
+    adminGuard,
+    [param('userId').isMongoId().withMessage('Invalid user ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const user = await adminService.approveOwner(req.params.userId);
+        res.json({ success: true, data: { user }, message: 'Account approved' });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/approvals/{userId}/reject:
+ *   patch:
+ *     summary: Reject a theatre owner's account
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/RegisterRequest'
- *           examples:
- *             user:
- *               summary: Regular user
- *               value:
- *                 name: Arjun Mehta
- *                 email: arjun@example.com
- *                 password: Secret@123
- *                 phone: "+919876543210"
- *             theatreOwner:
- *               summary: Theatre owner (requires admin approval)
- *               value:
- *                 name: Priya Nair
- *                 email: priya@inoxcinemas.com
- *                 password: Secret@123
- *                 role: theatre_owner
+ *             type: object
+ *             required: [reason]
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: Incomplete business registration documents
  *     responses:
- *       201:
- *         description: >
- *           Registration successful. For regular users, tokens are included.
- *           For theatre owners, tokens are omitted and `accountStatus` is `pending`.
+ *       200:
+ *         description: Account rejected
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         description: Already reviewed
+ */
+router.patch(
+    '/approvals/:userId/reject',
+    adminGuard,
+    [
+        param('userId').isMongoId().withMessage('Invalid user ID'),
+        body('reason')
+            .trim()
+            .notEmpty().withMessage('Rejection reason is required')
+            .isLength({ max: 500 }).withMessage('Reason must be 500 characters or fewer'),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const user = await adminService.rejectOwner(req.params.userId, req.body.reason);
+        res.json({ success: true, data: { user }, message: 'Account rejected' });
+    })
+);
+
+// ─── Owner management ─────────────────────────────────────────────────────────
+
+/**
+ * @swagger
+ * /admin/owners:
+ *   get:
+ *     summary: List all theatre owners, optionally filtered by status
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, active, rejected]
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of theatre owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get(
+    '/owners',
+    adminGuard,
+    [
+        query('status').optional()
+            .isIn(Object.values(ACCOUNT_STATUS))
+            .withMessage(`status must be one of: ${Object.values(ACCOUNT_STATUS).join(', ')}`),
+        query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+        query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const data = await adminService.getAllOwners({
+            page: parseInt(req.query.page) || 1,
+            limit: parseInt(req.query.limit) || 20,
+            status: req.query.status,
+        });
+        res.json({ success: true, data });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/suspend:
+ *   patch:
+ *     summary: Suspend a user account and revoke all their sessions
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Account suspended
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch(
+    '/users/:userId/suspend',
+    adminGuard,
+    [param('userId').isMongoId().withMessage('Invalid user ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const user = await adminService.setActiveStatus(req.params.userId, false);
+        res.json({ success: true, data: { user }, message: 'Account suspended' });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/users/{userId}/reactivate:
+ *   patch:
+ *     summary: Reactivate a suspended user account
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Account reactivated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch(
+    '/users/:userId/reactivate',
+    adminGuard,
+    [param('userId').isMongoId().withMessage('Invalid user ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const user = await adminService.setActiveStatus(req.params.userId, true);
+        res.json({ success: true, data: { user }, message: 'Account reactivated' });
+    })
+);
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TheatreOwner admin routes
+// Targets the dedicated TheatreOwner collection (separate from User).
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /admin/theatre-owners:
+ *   get:
+ *     summary: List all theatre owners
+ *     description: >
+ *       Returns a paginated list of all TheatreOwner documents.
+ *       Filter by `status` (pending | active | rejected) for targeted queries.
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [pending, active, rejected]
+ *     responses:
+ *       200:
+ *         description: Paginated list of theatre owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get(
+    '/theatre-owners',
+    adminGuard,
+    [
+        query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+        query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
+        query('status').optional().isIn(['pending', 'active', 'rejected']).withMessage('status must be pending | active | rejected'),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const data = await adminService.getAllTheatreOwners({
+            page:   parseInt(req.query.page)  || 1,
+            limit:  parseInt(req.query.limit) || 20,
+            status: req.query.status,
+        });
+        res.json({ success: true, data });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/theatre-owners/pending:
+ *   get:
+ *     summary: List theatre owners awaiting approval
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: limit
+ *         schema: { type: integer, default: 20 }
+ *     responses:
+ *       200:
+ *         description: Paginated list of pending theatre owners
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ */
+router.get(
+    '/theatre-owners/pending',
+    adminGuard,
+    [
+        query('page').optional().isInt({ min: 1 }).withMessage('page must be a positive integer'),
+        query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const data = await adminService.getPendingOwnerApprovals({
+            page:  parseInt(req.query.page)  || 1,
+            limit: parseInt(req.query.limit) || 20,
+        });
+        res.json({ success: true, data });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/theatre-owners/{id}/approve:
+ *   patch:
+ *     summary: Approve a pending theatre owner
+ *     description: >
+ *       Sets `accountStatus` to `active`. The owner can now log in and
+ *       manage their theatre. An approval notification email is queued.
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           $ref: '#/components/schemas/MongoId'
+ *     responses:
+ *       200:
+ *         description: Theatre owner approved
  *         content:
  *           application/json:
  *             schema:
@@ -107,354 +390,157 @@ const router = Router();
  *                     data:
  *                       type: object
  *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/UserPublic'
- *                         accessToken:
- *                           type: string
- *                           nullable: true
- *                           description: Absent when accountStatus is pending
- *                         refreshToken:
- *                           type: string
- *                           nullable: true
- *                           description: Absent when accountStatus is pending
+ *                         owner:
+ *                           $ref: '#/components/schemas/TheatreOwnerPublic'
  *       400:
  *         $ref: '#/components/responses/ValidationError'
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
  *       409:
  *         $ref: '#/components/responses/Conflict'
- *       429:
- *         $ref: '#/components/responses/TooManyRequests'
  */
-router.post(
-  '/register',
-  authLimiter,
-  [validators.name, validators.email, validators.password, validators.phone, validators.role],
-  validate,
-  authController.register,
+router.patch(
+    '/theatre-owners/:id/approve',
+    adminGuard,
+    [param('id').isMongoId().withMessage('Invalid owner ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const owner = await adminService.approveTheatreOwner(req.params.id);
+        res.json({ success: true, data: { owner }, message: 'Theatre owner approved' });
+    })
 );
 
 /**
  * @swagger
- * /auth/login:
- *   post:
- *     summary: Log in and receive JWT tokens
+ * /admin/theatre-owners/{id}/reject:
+ *   patch:
+ *     summary: Reject a pending theatre owner
  *     description: >
- *       Validates credentials and returns a short-lived access token and a
- *       long-lived refresh token. Theatre owners with `accountStatus: pending`
- *       or `accountStatus: rejected` will receive a 403 with a descriptive
- *       message. Suspended accounts (`isActive: false`) also receive a 403.
- *     tags: [Auth]
- *     x-rateLimit: authLimiter
+ *       Sets `accountStatus` to `rejected` and stores the rejection reason.
+ *       A rejection notification email is queued.
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           $ref: '#/components/schemas/MongoId'
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/LoginRequest'
- *           example:
- *             email: arjun@example.com
- *             password: Secret@123
+ *             type: object
+ *             required: [reason]
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 maxLength: 500
+ *                 example: Incomplete business documentation provided.
  *     responses:
  *       200:
- *         description: Login successful
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       $ref: '#/components/schemas/AuthTokens'
+ *         description: Theatre owner rejected
  *       400:
  *         $ref: '#/components/responses/ValidationError'
  *       401:
- *         description: Invalid credentials
+ *         $ref: '#/components/responses/Unauthorized'
  *       403:
- *         description: Account pending approval, rejected, or suspended
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             examples:
- *               pending:
- *                 value:
- *                   success: false
- *                   message: Your account is under review. You will be notified once approved.
- *               rejected:
- *                 value:
- *                   success: false
- *                   message: Your account application was rejected. Please contact support.
- *               suspended:
- *                 value:
- *                   success: false
- *                   message: Account has been suspended. Please contact support.
- *       429:
- *         $ref: '#/components/responses/TooManyRequests'
- */
-router.post(
-  '/login',
-  authLimiter,
-  [validators.email, body('password').notEmpty().withMessage('Password is required')],
-  validate,
-  authController.login,
-);
-
-/**
- * @swagger
- * /auth/refresh-token:
- *   post:
- *     summary: Rotate tokens using a refresh token
- *     description: >
- *       Issues a new access token and refresh token pair. The old refresh token
- *       is invalidated immediately (token rotation). If a previously used token
- *       is detected (reuse attack), the entire token family is revoked and all
- *       sessions for that user are terminated.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [refreshToken]
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 example: a3f9c2e1b4d7...
- *     responses:
- *       200:
- *         description: New token pair issued
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         accessToken:
- *                           type: string
- *                         refreshToken:
- *                           type: string
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       401:
- *         description: Invalid, expired, or reused refresh token
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             examples:
- *               invalid:
- *                 value: { success: false, message: Invalid refresh token }
- *               expired:
- *                 value: { success: false, message: Refresh token expired }
- *               reuse:
- *                 value: { success: false, message: Refresh token reuse detected — all sessions invalidated }
- */
-router.post(
-  '/refresh-token',
-  [validators.refreshToken],
-  validate,
-  authController.refreshToken,
-);
-
-/**
- * @swagger
- * /auth/logout:
- *   post:
- *     summary: Log out of the current session
- *     description: >
- *       Invalidates the provided refresh token. The access token will remain
- *       valid until it expires naturally (TTL is short by design). The client
- *       should discard both tokens immediately after calling this endpoint.
- *     tags: [Auth]
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [refreshToken]
- *             properties:
- *               refreshToken:
- *                 type: string
- *                 example: a3f9c2e1b4d7...
- *     responses:
- *       200:
- *         description: Logged out successfully
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- */
-router.post(
-  '/logout',
-  [validators.refreshToken],
-  validate,
-  authController.logout,
-);
-
-/**
- * @swagger
- * /auth/logout-all:
- *   post:
- *     summary: Terminate all active sessions
- *     description: >
- *       Revokes every refresh token belonging to the authenticated user across
- *       all devices. Use this after a password change or suspected account
- *       compromise. Requires a valid access token — the current session's
- *       refresh token is also revoked.
- *     tags: [Auth]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: All sessions terminated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- */
-router.post('/logout-all', authenticate, authController.logoutAll);
-
-/**
- * @swagger
- * /auth/profile:
- *   get:
- *     summary: Get the authenticated user's profile
- *     tags: [Auth]
- *     security:
- *       - BearerAuth: []
- *     responses:
- *       200:
- *         description: Profile returned successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/UserPublic'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
- *   patch:
- *     summary: Update profile fields
- *     description: >
- *       Partial update — only include fields you want to change.
- *       Allowed fields: `name`, `phone`, `preferredCity`, `avatar`.
- *       All other fields are silently ignored.
- *     tags: [Auth]
- *     security:
- *       - BearerAuth: []
- *     requestBody:
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/UpdateProfileRequest'
- *           example:
- *             name: Arjun Kumar Mehta
- *             preferredCity: Mumbai
- *     responses:
- *       200:
- *         description: Profile updated successfully
- *         content:
- *           application/json:
- *             schema:
- *               allOf:
- *                 - $ref: '#/components/schemas/SuccessResponse'
- *                 - type: object
- *                   properties:
- *                     data:
- *                       type: object
- *                       properties:
- *                         user:
- *                           $ref: '#/components/schemas/UserPublic'
- *       400:
- *         $ref: '#/components/responses/ValidationError'
- *       401:
- *         $ref: '#/components/responses/Unauthorized'
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
+ *       409:
+ *         $ref: '#/components/responses/Conflict'
  */
-router.get('/profile', authenticate, authController.getProfile);
 router.patch(
-  '/profile',
-  authenticate,
-  [
-    validators.name.optional(),
-    validators.phone,
-    body('preferredCity').optional().trim().isLength({ max: 100 }).withMessage('City must be 100 chars or fewer'),
-    body('avatar').optional().isURL().withMessage('Avatar must be a valid URL'),
-  ],
-  validate,
-  authController.updateProfile,
+    '/theatre-owners/:id/reject',
+    adminGuard,
+    [
+        param('id').isMongoId().withMessage('Invalid owner ID'),
+        body('reason').trim().notEmpty().withMessage('Rejection reason is required').isLength({ max: 500 }),
+    ],
+    validate,
+    asyncHandler(async (req, res) => {
+        const owner = await adminService.rejectTheatreOwner(req.params.id, req.body.reason);
+        res.json({ success: true, data: { owner }, message: 'Theatre owner rejected' });
+    })
 );
 
 /**
  * @swagger
- * /auth/change-password:
+ * /admin/theatre-owners/{id}/suspend:
  *   patch:
- *     summary: Change account password
- *     description: >
- *       Verifies the current password, then updates it. On success, **all
- *       refresh tokens are revoked** across all devices — the user must
- *       log in again on every device. The current access token remains valid
- *       until it expires (short TTL).
- *     tags: [Auth]
+ *     summary: Suspend a theatre owner account
+ *     description: Sets `isActive` to false and revokes all active sessions.
+ *     tags: [Admin]
  *     security:
  *       - BearerAuth: []
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             $ref: '#/components/schemas/ChangePasswordRequest'
- *           example:
- *             currentPassword: Secret@123
- *             newPassword: NewSecret@456
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           $ref: '#/components/schemas/MongoId'
  *     responses:
  *       200:
- *         description: Password changed — all sessions have been terminated
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/SuccessResponse'
- *       400:
- *         description: Validation failed or current password is incorrect
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ErrorResponse'
- *             examples:
- *               wrongPassword:
- *                 value: { success: false, message: Current password is incorrect }
- *               samePassword:
- *                 value: { success: false, message: New password must differ from current password }
- *               validation:
- *                 $ref: '#/components/examples/ValidationErrorExample'
+ *         description: Account suspended
  *       401:
  *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
 router.patch(
-  '/change-password',
-  authenticate,
-  [validators.currentPassword, validators.newPassword],
-  validate,
-  authController.changePassword,
+    '/theatre-owners/:id/suspend',
+    adminGuard,
+    [param('id').isMongoId().withMessage('Invalid owner ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const owner = await adminService.setOwnerActiveStatus(req.params.id, false);
+        res.json({ success: true, data: { owner }, message: 'Account suspended' });
+    })
+);
+
+/**
+ * @swagger
+ * /admin/theatre-owners/{id}/reactivate:
+ *   patch:
+ *     summary: Reactivate a suspended theatre owner account
+ *     description: Sets `isActive` to true. The owner can log in immediately.
+ *     tags: [Admin]
+ *     security:
+ *       - BearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           $ref: '#/components/schemas/MongoId'
+ *     responses:
+ *       200:
+ *         description: Account reactivated
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       404:
+ *         $ref: '#/components/responses/NotFound'
+ */
+router.patch(
+    '/theatre-owners/:id/reactivate',
+    adminGuard,
+    [param('id').isMongoId().withMessage('Invalid owner ID')],
+    validate,
+    asyncHandler(async (req, res) => {
+        const owner = await adminService.setOwnerActiveStatus(req.params.id, true);
+        res.json({ success: true, data: { owner }, message: 'Account reactivated' });
+    })
 );
 
 export default router;
