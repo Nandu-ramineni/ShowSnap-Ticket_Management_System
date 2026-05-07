@@ -43,6 +43,57 @@ export const login = (email, password) => async (dispatch) => {
     }
 };
 
+export const clientRegister = (payload) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.CLIENT_REGISTER_REQUEST });
+
+        const formData = new FormData();
+
+        formData.append('name', payload.name);
+        formData.append('email', payload.email);
+        formData.append('password', payload.password);
+
+        payload.documents.forEach((doc) => {
+            formData.append('files', doc.file);
+            formData.append('docTypes', doc.docType);
+        });
+
+        const { data } = await api.post(
+            '/theatre-owner/register',
+            formData,
+            {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            }
+        );
+
+        dispatch({
+            type: ActionTypes.CLIENT_REGISTER_SUCCESS,
+            payload: data.data.owner,
+        });
+
+        return {
+            success: true,
+            owner: data.data.owner,
+        };
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Registration failed. Please try again.';
+
+        dispatch({
+            type: ActionTypes.CLIENT_REGISTER_FAILURE,
+            payload: message,
+        });
+
+        return {
+            success: false,
+            message,
+        };
+    }
+};
+
 // ─── Logout ───────────────────────────────────────────────────────────────────
 /**
  * Clears cookies, localStorage, and resets Redux state.
@@ -51,7 +102,7 @@ export const login = (email, password) => async (dispatch) => {
 export const logout = () => (dispatch) => {
     Cookies.remove('accessToken');
     Cookies.remove('refreshToken');
-    localStorage.removeItem('authUser');
+    localStorage.removeItem('authClient');
     dispatch({ type: ActionTypes.AUTH_LOGOUT });
 };
 

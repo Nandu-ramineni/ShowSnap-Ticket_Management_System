@@ -44,15 +44,28 @@ export const authReducer = (state = initialState, action) => {
                 error: action.payload,
             };
 
-        // ── Signup ────────────────────────────────────────────────────────────
-        case ActionTypes.AUTH_SIGNUP_REQUEST:
+        // ── Signup ─────────────────────────────────────────────────────────────
+        case ActionTypes.CLIENT_REGISTER_REQUEST:
             return { ...state, isLoading: true, error: null, signupSuccess: false };
 
-        case ActionTypes.AUTH_SIGNUP_SUCCESS:
-            return { ...state, isLoading: false, signupSuccess: true, error: null };
+        case ActionTypes.CLIENT_REGISTER_SUCCESS:
+            return {
+                ...state,
+                isLoading: false,
+                isAuthenticated: false,
+                signupSuccess: true,
+                error: null,
+            };
 
-        case ActionTypes.AUTH_SIGNUP_FAILURE:
-            return { ...state, isLoading: false, signupSuccess: false, error: action.payload };
+        case ActionTypes.CLIENT_REGISTER_FAILURE:
+            return {
+                ...state,
+                isLoading: false,
+                isAuthenticated: false,
+                user: null,
+                error: action.payload,
+                signupSuccess: false,
+            };
 
         // ── Hydration (restoring session on page refresh) ─────────────────────
         case ActionTypes.AUTH_HYDRATE_REQUEST:

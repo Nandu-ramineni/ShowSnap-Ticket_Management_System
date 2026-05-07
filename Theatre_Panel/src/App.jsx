@@ -1,13 +1,15 @@
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-
+import { Toaster as Sonner } from 'sonner';
 import Login from './components/Auth/Login';
 import Dashboard from './Pages/Dashboard/Dashboard';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import { hydrateAuth } from './Redux/Actions/authActions';
+import Signup from './components/Auth/Signup';
+import PrivacyPolicy from './components/Auth/PrivacyAgreementPolicy';
 
 function App() {
     const dispatch = useDispatch();
@@ -22,15 +24,11 @@ function App() {
                 {/* ── Root redirect ────────────────────────────────────────── */}
                 <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-                {/* ── Public pages (redirect to /dashboard when logged in) ─── */}
-                <Route
-                    path="/login"
-                    element={
-                        <PublicRoute>
-                            <Login />
-                        </PublicRoute>
-                    }
-                />
+                <Route element={<PublicRoute />}>
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Signup />} />
+                <Route path="/privacy-agreement-policy" element={<PrivacyPolicy />} />
+            </Route>
                 <Route
                     element={
                         <ProtectedRoute>
@@ -54,8 +52,9 @@ function App() {
 
                 {/* ── Catch-all ─────────────────────────────────────────────── */}
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
-
+                
             </Routes>
+            <Sonner theme="dark" position="top-right" />
         </BrowserRouter>
     );
 }

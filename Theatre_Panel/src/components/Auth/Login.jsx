@@ -98,7 +98,6 @@ const Login = () => {
 
                 <CardContent>
                     <form
-                        id="loginForm"
                         onSubmit={handleSubmit}
                         noValidate
                         aria-label="Login form"
@@ -152,8 +151,8 @@ const Login = () => {
 
                 <CardFooter className="flex-col gap-3">
                     <Button
-                        type="submit"
-                        form="loginForm"
+                        type="button"
+                        onClick={handleSubmit}
                         className="w-full"
                         disabled={isLoading}
                     >
@@ -177,7 +176,7 @@ const Login = () => {
                     <p className="text-sm text-muted-foreground text-center">
                         Don&apos;t have an account?{' '}
                         <Link
-                            to="/signup"
+                            to="/register"
                             className="font-medium text-foreground hover:underline underline-offset-2"
                         >
                             Sign up

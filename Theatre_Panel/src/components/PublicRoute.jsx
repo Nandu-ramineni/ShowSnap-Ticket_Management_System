@@ -1,57 +1,54 @@
 /**
- * PublicRoute.jsx
+ * PublicRoute.jsx (Production Grade)
  *
- * Wraps pages that should NOT be accessible once authenticated
- * (login, signup, forgot-password …).
+ * Prevents authenticated users from accessing public pages
+ * like login/register/forgot-password.
  *
- * Render logic:
- *  isHydrating === true  → show full-screen spinner (same guard as ProtectedRoute)
- *  isAuthenticated       → redirect to /dashboard
- *  else                  → render children (the public page)
+ * Flow:
+ *  - Hydrating → spinner
+ *  - Authenticated → redirect to dashboard
+ *  - Else → render public routes via Outlet
  */
 
-import { Navigate } from 'react-router-dom';
+import { Navigate, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { selectIsAuthenticated, selectIsHydrating } from '@/Redux/Selectors/authSelectors';
+import {
+    selectIsAuthenticated,
+    selectIsHydrating,
+} from '@/Redux/Selectors/authSelectors';
 
+// ─────────────────────────────────────────────
+// Spinner (should ideally move to /components/common)
+// ─────────────────────────────────────────────
 const FullScreenSpinner = () => (
     <div
         role="status"
-        aria-label="Loading…"
-        style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
-            background: '#0c0f1a',
-        }}
+        aria-label="Loading"
+        className="min-h-screen flex items-center justify-center bg-background"
     >
-        <svg
-            width="36" height="36"
-            viewBox="0 0 24 24" fill="none"
-            stroke="url(#grad2)" strokeWidth="2.5"
-            style={{ animation: 'spin 0.8s linear infinite' }}
-            aria-hidden="true"
-        >
-            <defs>
-                <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%"   stopColor="#e84393" />
-                    <stop offset="100%" stopColor="#7c3aed" />
-                </linearGradient>
-            </defs>
-            <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-        </svg>
-        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+        <div className="h-10 w-10 border-4 border-muted border-t-primary rounded-full animate-spin" />
     </div>
 );
 
-const PublicRoute = ({ children }) => {
-    const isHydrating     = useSelector(selectIsHydrating);
+// ─────────────────────────────────────────────
+// Public Route Guard
+// ─────────────────────────────────────────────
+const PublicRoute = () => {
+    const isHydrating = useSelector(selectIsHydrating);
     const isAuthenticated = useSelector(selectIsAuthenticated);
 
-    if (isHydrating)     return <FullScreenSpinner />;
-    if (isAuthenticated) return <Navigate to="/dashboard" replace />;
-    return children;
+    // still checking auth state
+    if (isHydrating) {
+        return <FullScreenSpinner />;
+    }
+
+    // already logged in → block public routes
+    if (isAuthenticated) {
+        return <Navigate to="/dashboard" replace />;
+    }
+
+    // allow public routes
+    return <Outlet />;
 };
 
 export default PublicRoute;

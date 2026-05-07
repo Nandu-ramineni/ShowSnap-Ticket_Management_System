@@ -4,9 +4,9 @@ export const AUTH_LOGIN_SUCCESS = 'AUTH_LOGIN_SUCCESS';
 export const AUTH_LOGIN_FAILURE = 'AUTH_LOGIN_FAILURE';
 
 // ─── Signup ───────────────────────────────────────────────────────────────────
-export const AUTH_SIGNUP_REQUEST = 'AUTH_SIGNUP_REQUEST';
-export const AUTH_SIGNUP_SUCCESS = 'AUTH_SIGNUP_SUCCESS';
-export const AUTH_SIGNUP_FAILURE = 'AUTH_SIGNUP_FAILURE';
+export const CLIENT_REGISTER_REQUEST = 'CLIENT_REGISTER_REQUEST';
+export const CLIENT_REGISTER_SUCCESS = 'CLIENT_REGISTER_SUCCESS';
+export const CLIENT_REGISTER_FAILURE = 'CLIENT_REGISTER_FAILURE';
 
 // ─── Session hydration (cookie → Redux on page refresh) ──────────────────────
 export const AUTH_HYDRATE_REQUEST = 'AUTH_HYDRATE_REQUEST';
