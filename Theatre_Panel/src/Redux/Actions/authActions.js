@@ -54,7 +54,7 @@ export const clientRegister = (payload) => async (dispatch) => {
         formData.append('password', payload.password);
 
         payload.documents.forEach((doc) => {
-            formData.append('files', doc.file);
+            formData.append('documents', doc.file); // FIX 1: was 'files', multer expects 'documents'
             formData.append('docTypes', doc.docType);
         });
 
@@ -73,10 +73,8 @@ export const clientRegister = (payload) => async (dispatch) => {
             payload: data.data.owner,
         });
 
-        return {
-            success: true,
-            owner: data.data.owner,
-        };
+        return { success: true, owner: data.data.owner };
+
     } catch (error) {
         const message =
             error.response?.data?.message ||
@@ -87,10 +85,7 @@ export const clientRegister = (payload) => async (dispatch) => {
             payload: message,
         });
 
-        return {
-            success: false,
-            message,
-        };
+        return { success: false, error: message }; // FIX 2: added `error` key so Signup.jsx's !result?.error check works
     }
 };
 
