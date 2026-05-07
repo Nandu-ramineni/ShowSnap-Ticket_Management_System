@@ -236,10 +236,11 @@ router.post(
         v.email,
         v.password,
         v.name,
-        body('theatreName')
+        body(['theatreInfo.theatreName', 'theatreName'])
+            .optional()
             .trim()
-            .notEmpty().withMessage('Theatre name is required')
-            .isLength({ max: 150 }).withMessage('Theatre name must be 150 chars or fewer'),
+            .isLength({ max: 150 })
+            .withMessage('Theatre name must be 150 chars or fewer'),
         v.isMultiplex,
         v.docTypes
     ],

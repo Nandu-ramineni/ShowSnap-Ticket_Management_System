@@ -89,7 +89,7 @@ const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&
 const Signup = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { isLoading } = useSelector((s) => s.auth);
+    const { isLoading,error } = useSelector((s) => s.auth);
 
     const [step, setStep] = useState(1);
     const [uploading, setUploading] = useState({});
@@ -294,10 +294,25 @@ const Signup = () => {
             })
         );
 
-        if (!result?.errors) {
+        if (result?.success) {
             localStorage.removeItem(DRAFT_KEY);
-            toast.success('Account created! Please log in.');
-            navigate('/login');
+            toast.success('Application submitted!');
+
+            navigate('/pending', {
+                replace: true,            // don't let user hit Back to re-submit
+                state: {
+                    owner: {
+                        id: result?.data?.owner?.id,
+                        name: result?.data?.owner?.name,
+                        email: result?.data?.owner?.email,
+                        theatreName: result?.data?.owner?.theatreName,          // API doesn't echo this, use local state
+                        accountStatus: result?.data?.owner?.accountStatus,
+                    },
+                    documents: result?.data?.owner?.supportingDocuments ?? [],
+                },
+            });
+        } else {
+            toast.error(result?.error || 'Registration failed. Please try again.');
         }
     };
 

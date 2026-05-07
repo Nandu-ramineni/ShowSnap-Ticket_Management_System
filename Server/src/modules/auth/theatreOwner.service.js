@@ -69,7 +69,7 @@ const uploadDocToCloudinary = async (file, docType) => {
 // All theatre/onboarding fields are filled later via /onboarding.
 // No JWT tokens issued — account is pending until admin approves.
 
-export const register = async ({ email, password, name,theatreName,isMultiplex = false, files = [] }) => {
+export const register = async ({ email, password, name, theatreName,isMultiplex = false, files = [] }) => {
     const existing = await TheatreOwner.findOne({ email });
     if (existing) throw ApiError.conflict('Email already registered');
 
@@ -87,12 +87,12 @@ export const register = async ({ email, password, name,theatreName,isMultiplex =
         password: hashed,
         name,
         isMultiplex,
-        theatreInfo: { theatreName },
+        theatreInfo: { theatreName: theatreName },
         supportingDocuments: uploadedDocs,
         accountStatus: ACCOUNT_STATUS.PENDING,
         onboardingStatus: ONBOARDING_STATUS.PENDING_ONBOARDING,
     });
-
+ 
     return { owner: owner.toPublicJSON() };
 };
 

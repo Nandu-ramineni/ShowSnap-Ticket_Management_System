@@ -51,6 +51,8 @@ export const clientRegister = (payload) => async (dispatch) => {
 
         formData.append('name', payload.name);
         formData.append('email', payload.email);
+        formData.append('theatreName', payload.theatreName);
+        formData.append('isMultiplex', payload.isMultiplex);
         formData.append('password', payload.password);
 
         payload.documents.forEach((doc) => {

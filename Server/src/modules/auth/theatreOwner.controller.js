@@ -20,8 +20,8 @@ const getMeta = (req) => ({
 // from req.body.docTypes[] before passing to the service.
 
 export const register = asyncHandler(async (req, res) => {
-    const { email, password, name } = req.body;
-
+    const { email, password, name, theatreName , isMultiplex } = req.body;
+    console.log('Received registration:', { email, name, theatreName, isMultiplex, files: req.files?.length ?? 0 });
     // req.files is an array from upload.array('documents', 10)
     // req.body.docTypes is a string (single upload) or array (multiple)
     const rawFiles = req.files ?? [];
@@ -35,7 +35,7 @@ export const register = asyncHandler(async (req, res) => {
         return f;
     });
 
-    const data = await ownerService.register({ email, password, name, files });
+    const data = await ownerService.register({ email, password, name, theatreName, isMultiplex, files });
     sendCreated(res, data, 'Registration submitted. Awaiting admin approval.');
 });
 
