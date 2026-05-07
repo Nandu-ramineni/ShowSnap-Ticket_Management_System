@@ -86,6 +86,9 @@ const v = {
             .optional()
             .matches(/^\d{4,10}$/).withMessage('Pincode must be 4–10 digits'),
     },
+
+    //check if the owner is multiplex or not
+    isMultiplex: body('isMultiplex').optional().isBoolean().withMessage('isMultiplex must be a boolean'),
 };
 
 // Amenity validators — shared between onboarding and profile update
@@ -132,7 +135,7 @@ const cancellationValidators = [
  *       **Step 1 of the theatre owner flow.**
  *
  *       Accepts `multipart/form-data`. Submit:
- *       - `email`, `password`, `name` as text fields
+ *       - `email`, `password`, `name`, `theatreName`, `isMultiplex` as text fields
  *       - `documents` as one or more file fields (images or PDFs, max 10 MB each)
  *       - `docTypes` as matching text fields (one per document file)
  *
@@ -152,7 +155,7 @@ const cancellationValidators = [
  *         multipart/form-data:
  *           schema:
  *             type: object
- *             required: [email, password, name, documents, docTypes]
+ *             required: [email, password, name, theatreName, documents, docTypes]
  *             properties:
  *               email:
  *                 type: string
@@ -165,6 +168,12 @@ const cancellationValidators = [
  *               name:
  *                 type: string
  *                 example: Priya Nair
+ *               theatreName:
+ *                 type: string
+ *                 example: PVR Cinemas Kukatpally
+ *               isMultiplex:
+ *                 type: boolean
+ *                 example: true
  *               documents:
  *                 type: array
  *                 items:
@@ -223,7 +232,17 @@ router.post(
     '/register',
     authLimiter,
     uploadDocuments(10),    // multer: req.files[], max 10 docs, images + PDF
-    [v.email, v.password, v.name, v.docTypes],
+    [
+        v.email,
+        v.password,
+        v.name,
+        body('theatreName')
+            .trim()
+            .notEmpty().withMessage('Theatre name is required')
+            .isLength({ max: 150 }).withMessage('Theatre name must be 150 chars or fewer'),
+        v.isMultiplex,
+        v.docTypes
+    ],
     validate,
     ownerController.register,
 );
