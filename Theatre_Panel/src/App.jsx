@@ -11,12 +11,6 @@ import { hydrateAuth } from './Redux/Actions/authActions';
 
 function App() {
     const dispatch = useDispatch();
-
-    /**
-     * Runs once on mount.
-     * Reads the accessToken cookie + authUser from localStorage and
-     * rehydrates Redux state so the user stays logged-in after a page refresh.
-     */
     useEffect(() => {
         dispatch(hydrateAuth());
     }, [dispatch]);
@@ -37,11 +31,6 @@ function App() {
                         </PublicRoute>
                     }
                 />
-
-                {/* ── Protected layout shell ────────────────────────────────
-                      All children share the same Sidebar + TopBar via <Outlet />.
-                      Add new pages here as additional <Route> siblings.
-                ─────────────────────────────────────────────────────────── */}
                 <Route
                     element={
                         <ProtectedRoute>

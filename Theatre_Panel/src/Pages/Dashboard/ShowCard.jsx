@@ -1,4 +1,4 @@
-import { Clock, Monitor, Users, Edit2, XCircle, MapPin } from 'lucide-react';
+import { Clock, Monitor,  Edit2, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ export default function ShowCard({ show }) {
                         <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{show.startTime}</span>
                     </div>
                 </div>
-                <Badge className={`text-[10px] px-2 border ${statusColor} ml-2 flex-shrink-0`}>
+                <Badge className={`text-[10px] px-2 border ${statusColor} ml-2 shrink-0`}>
                     {show.status === 'housefull' ? '🔥 HOUSEFULL' : `${occupancy}%`}
                 </Badge>
             </div>

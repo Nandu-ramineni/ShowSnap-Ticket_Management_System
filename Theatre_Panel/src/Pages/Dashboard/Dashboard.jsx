@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Ticket, IndianRupee, Users, TrendingUp, AlertTriangle, Activity } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { Ticket, IndianRupee, Users, Activity } from 'lucide-react';
+import {  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { SHOWTIMES, RECENT_BOOKINGS, REVENUE_CHART_DATA, formatINRFromRupees } from '@/lib/mockData';
 import KPICard from './KPICard';
 import BookingFeedItem from './BookingFeedItem';
@@ -53,7 +53,7 @@ const Dashboard = () => {
     <div className="p-4 lg:p-6 space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">Welcome back, {user?.name ?? 'User'} 👋</h1>
-        <p className="text-sm text-muted-foreground mt-1">Here's what's happening with your theatre today.</p>
+        <p className="text-sm text-muted-foreground mt-1">Here{"'"}s what{"'"}s happening with your theatre today.</p>
       </div>
 
       {/* KPI Cards */}
@@ -136,7 +136,7 @@ const Dashboard = () => {
               Live
             </div>
           </div>
-          <div className="space-y-0 max-h-[340px] overflow-y-auto pr-1">
+          <div className="space-y-0 max-h-85 overflow-y-auto pr-1">
             {bookings.slice(0, 8).map((b, i) => (
               <BookingFeedItem key={b.id} booking={b} index={i} />
             ))}
@@ -147,7 +147,7 @@ const Dashboard = () => {
       {/* Upcoming Shows */}
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-white font-semibold">Today's Shows</h3>
+          <h3 className="text-white font-semibold">Today{"'"}s Shows</h3>
           <a href="/shows" className="text-xs text-brand hover:text-brand/80 transition-colors">View all →</a>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">

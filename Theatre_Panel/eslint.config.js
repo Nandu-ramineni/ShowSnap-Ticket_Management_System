@@ -30,9 +30,14 @@ export default defineConfig([
       ...react.configs.recommended.rules,
       ...reactHooks.configs.recommended.rules,
 
-      // Optional tweaks
-      'react/react-in-jsx-scope': 'off', // React 17+
+      // React 17+
+      'react/react-in-jsx-scope': 'off',
 
+      // ✅ FIX: disable prop-types warnings
+      'react/prop-types': 'off',
+
+      // optional
+      'react-refresh/only-export-components': 'warn',
     },
 
     settings: {
