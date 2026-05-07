@@ -121,6 +121,9 @@ const Signup = () => {
                 // Only restore non-sensitive fields
                 ...(parsed.form?.name ? { name: parsed.form.name } : {}),
                 ...(parsed.form?.email ? { email: parsed.form.email } : {}),
+                ...(parsed.form?.theatreName ? { theatreName: parsed.form.theatreName } : {}),
+                ...(parsed.form?.isMultiplex !== undefined ? { isMultiplex: parsed.form.isMultiplex } : {}),
+
             }));
             setStep(parsed.step || 1);
             setAgreed(parsed.agreed || false);
