@@ -134,6 +134,14 @@ const theatreOwnerSchema = new mongoose.Schema(
             default: [],
         },
 
+        //Step 2 : Assign Registration ID
+        applicationId: {
+            type: String,
+            unique: true,
+            required: true,
+            index: true,
+        },
+
         // ── Step 3: Onboarding fields (filled post-approval via /onboarding) ─────
         // None of these are required at the Mongoose level — the service layer
         // checks completeness and flips onboardingStatus to 'completed'.
@@ -202,6 +210,7 @@ theatreOwnerSchema.methods.isOnboardingComplete = function () {
     return Object.values(ONBOARDING_REQUIRED_FIELDS).every((check) => check(this));
 };
 
+
 // ─── Pre-save guard ───────────────────────────────────────────────────────────
 
 theatreOwnerSchema.pre('save', function (next) {
@@ -219,6 +228,7 @@ theatreOwnerSchema.methods.toPublicJSON = function () {
         id: this._id,
         email: this.email,
         name: this.name,
+        applicationId: this.applicationId,
         // Documents — return metadata only, never publicId
         supportingDocuments: (this.supportingDocuments || []).map((d) => ({
             id: d._id,

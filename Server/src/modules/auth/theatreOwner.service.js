@@ -8,6 +8,7 @@ import { uploadBuffer, deleteResource } from '../../config/cloudinary.js';
 import ApiError from '../../utils/ApiError.js';
 import env from '../../config/env.js';
 import { ACCOUNT_STATUS, ONBOARDING_STATUS } from '../../utils/constants.js';
+import { generateApplicationId } from '../../utils/generateApplicationId.js';
 
 const SALT_ROUNDS = 12;
 const TOKEN_OPTIONS = { issuer: env.jwt.issuer, audience: env.jwt.audience };
@@ -82,10 +83,13 @@ export const register = async ({ email, password, name, theatreName,isMultiplex 
         files.map((f) => uploadDocToCloudinary(f, f.docType))
     );
 
+    const applicationId = await generateApplicationId();
+
     const owner = await TheatreOwner.create({
         email,
         password: hashed,
         name,
+        applicationId,
         isMultiplex,
         theatreInfo: { theatreName: theatreName },
         supportingDocuments: uploadedDocs,
@@ -109,8 +113,12 @@ export const login = async ({ email, password }, meta = {}) => {
 
     if (!owner || !passwordMatch) throw ApiError.unauthorized('Invalid credentials');
 
-    if (owner.accountStatus === ACCOUNT_STATUS.PENDING)
-        throw ApiError.forbidden('Your account is under review. You will be notified once approved.');
+    if (owner.accountStatus === ACCOUNT_STATUS.PENDING) {
+        return {
+            pending: true,
+            owner: owner.toPublicJSON(),
+        };
+    }
 
     if (owner.accountStatus === ACCOUNT_STATUS.REJECTED)
         throw ApiError.forbidden('Your account application was rejected. Please contact support.');

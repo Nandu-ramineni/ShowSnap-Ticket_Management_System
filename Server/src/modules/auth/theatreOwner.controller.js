@@ -40,10 +40,26 @@ export const register = asyncHandler(async (req, res) => {
 });
 
 // ─── Step 2: Login ────────────────────────────────────────────────────────────
-
 export const login = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
-    const data = await ownerService.login({ email, password }, getMeta(req));
+
+    const data = await ownerService.login(
+        { email, password },
+        getMeta(req)
+    );
+
+    // ── Pending account ─────────────────────────────
+    if (data?.pending) {
+        return res.status(403).json({
+            success: false,
+            pending: true,
+            message:
+                'Your account is under review. You will be notified once approved.',
+            owner: data.owner,
+        });
+    }
+
+    // ── Normal successful login ─────────────────────
     sendSuccess(res, data, 'Login successful');
 });
 
