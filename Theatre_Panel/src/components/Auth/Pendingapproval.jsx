@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import { CheckCircle2, Clock, Mail, FileText, Shield, ChevronRight, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { selectCurrentUser } from '@/Redux/Selectors/authSelectors';
 
-/* ──────────────────────────────────────────────────────────
-   Utility: format file size nicely
-────────────────────────────────────────────────────────── */
+/* ── Utility ── */
 const fmtSize = (bytes) => {
     if (!bytes) return '—';
     if (bytes < 1024) return `${bytes} B`;
@@ -14,9 +14,7 @@ const fmtSize = (bytes) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 };
 
-/* ──────────────────────────────────────────────────────────
-   Timeline step component
-────────────────────────────────────────────────────────── */
+/* ── Timeline step ── */
 const TimelineStep = ({ icon: Icon, title, subtitle, status, isLast }) => {
     const colors = {
         done: 'bg-emerald-100 text-emerald-700 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-400 dark:border-emerald-800',
@@ -43,9 +41,7 @@ const TimelineStep = ({ icon: Icon, title, subtitle, status, isLast }) => {
     );
 };
 
-/* ──────────────────────────────────────────────────────────
-   Document status badge
-────────────────────────────────────────────────────────── */
+/* ── Document badge ── */
 const DocBadge = ({ doc }) => {
     const label = doc.docType
         .replace(/_/g, ' ')
@@ -69,17 +65,26 @@ const DocBadge = ({ doc }) => {
     );
 };
 
-/* ══════════════════════════════════════════════════════════
-   PENDING PAGE
-══════════════════════════════════════════════════════════ */
+/* ══════════════════════════════════════════════════════
+   PENDING APPROVAL PAGE
+
+   Supports two entry paths:
+   1. From Signup  → navigate('/pending', { state: { owner, documents } })
+   2. From Login   → navigate('/pending', { state: { fromLogin: true, message } })
+      In this case we pull owner info from Redux (hydrated user).
+══════════════════════════════════════════════════════ */
 const PendingApproval = () => {
     const location = useLocation();
     const navigate = useNavigate();
+    const reduxUser = useSelector(selectCurrentUser);
     const [visible, setVisible] = useState(false);
 
-    // Data passed from Signup via navigate('/pending', { state: { owner, documents } })
-    const owner = location.state?.owner ?? {};
+    // Resolve owner data: prefer router state (fresh signup),
+    // fall back to Redux store (login redirect).
+    const routeOwner = location.state?.owner;
+    const owner = routeOwner ?? reduxUser ?? {};
     const documents = location.state?.documents ?? [];
+    const fromLogin = location.state?.fromLogin ?? false;
 
     // Animate in
     useEffect(() => {
@@ -87,18 +92,20 @@ const PendingApproval = () => {
         return () => clearTimeout(t);
     }, []);
 
-    // If someone lands here directly without state, redirect to login
+    // Guard: if no owner data at all, redirect to login
     useEffect(() => {
-        if (!location.state?.owner) {
+        if (!routeOwner && !reduxUser) {
             navigate('/login', { replace: true });
         }
-    }, [location.state, navigate]);
+    }, [routeOwner, reduxUser, navigate]);
 
     const steps = [
         {
             icon: CheckCircle2,
-            title: 'Registration Submitted',
-            subtitle: 'Your account and documents have been received successfully.',
+            title: fromLogin ? 'Application Previously Submitted' : 'Registration Submitted',
+            subtitle: fromLogin
+                ? 'Your account and documents were already received. We are still reviewing them.'
+                : 'Your account and documents have been received successfully.',
             status: 'done',
         },
         {
@@ -116,7 +123,7 @@ const PendingApproval = () => {
         {
             icon: Mail,
             title: 'Email Notification',
-            subtitle: 'You\'ll receive a confirmation email with next steps and your dashboard credentials.',
+            subtitle: "You'll receive a confirmation email with next steps and your dashboard credentials.",
             status: 'pending',
         },
     ];
@@ -129,11 +136,9 @@ const PendingApproval = () => {
             >
                 {/* ── Hero Card ── */}
                 <Card className="shadow-xl border-0 overflow-hidden">
-                    {/* Green top stripe */}
                     <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-500 to-emerald-600" />
 
                     <CardContent className="pt-8 pb-8 text-center">
-                        {/* Icon */}
                         <div className="relative inline-flex items-center justify-center mb-6">
                             <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-950 flex items-center justify-center">
                                 <CheckCircle2 size={38} className="text-emerald-600 dark:text-emerald-400" />
@@ -142,21 +147,23 @@ const PendingApproval = () => {
                         </div>
 
                         <h1 className="text-2xl font-bold text-foreground mb-2">
-                            Application Submitted!
+                            {fromLogin ? 'Account Under Review' : 'Application Submitted!'}
                         </h1>
                         <p className="text-muted-foreground text-sm max-w-md mx-auto leading-relaxed">
-                            Great news, <span className="font-semibold text-foreground">{owner.name || 'there'}</span>!
-                            Your registration for <span className="font-semibold text-foreground">{owner.theatreName || 'your theatre'}</span> has
-                            been received. Our team will review your documents and get back to you shortly.
+                            {fromLogin
+                                ? <>Welcome back, <span className="font-semibold text-foreground">{owner.name || 'there'}</span>! Your account is currently under review. You&apos;ll be notified once approved.</>
+                                : <>Great news, <span className="font-semibold text-foreground">{owner.name || 'there'}</span>! Your registration for <span className="font-semibold text-foreground">{owner.theatreName || 'your theatre'}</span> has been received. Our team will review your documents and get back to you shortly.</>
+                            }
                         </p>
 
-                        {/* Key detail chips */}
                         <div className="flex flex-wrap justify-center gap-2 mt-5">
-                            <div className="flex items-center gap-1.5 bg-muted/70 rounded-full px-3 py-1.5 text-xs">
-                                <Mail size={12} className="text-primary" />
-                                <span className="text-muted-foreground">Confirmation sent to</span>
-                                <span className="font-medium text-foreground">{owner.email || '—'}</span>
-                            </div>
+                            {owner.email && (
+                                <div className="flex items-center gap-1.5 bg-muted/70 rounded-full px-3 py-1.5 text-xs">
+                                    <Mail size={12} className="text-primary" />
+                                    <span className="text-muted-foreground">Confirmation sent to</span>
+                                    <span className="font-medium text-foreground">{owner.email}</span>
+                                </div>
+                            )}
                             <div className="flex items-center gap-1.5 bg-muted/70 rounded-full px-3 py-1.5 text-xs">
                                 <Clock size={12} className="text-amber-600" />
                                 <span className="font-medium text-foreground">3–5 business days</span>
@@ -167,8 +174,7 @@ const PendingApproval = () => {
                 </Card>
 
                 <div className="grid sm:grid-cols-2 gap-5">
-
-                    {/* ── What Happens Next ── */}
+                    {/* ── Timeline ── */}
                     <Card className="shadow-md border-0">
                         <CardContent className="pt-6 pb-6">
                             <h2 className="font-semibold text-foreground text-sm mb-4 flex items-center gap-2">
@@ -184,7 +190,7 @@ const PendingApproval = () => {
                     </Card>
 
                     <div className="space-y-5">
-                        {/* ── Documents Submitted ── */}
+                        {/* ── Documents (signup path only) ── */}
                         {documents.length > 0 && (
                             <Card className="shadow-md border-0">
                                 <CardContent className="pt-6 pb-4">
@@ -201,29 +207,30 @@ const PendingApproval = () => {
                             </Card>
                         )}
 
-                        {/* ── Important Notice ── */}
-                        <Card className="shadow-md border-0 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
-                            <CardContent className="pt-5 pb-5 space-y-3 text-sm">
-                                <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold">
-                                    <Mail size={15} />
-                                    Check your inbox
-                                </div>
-                                <p className="text-blue-700/80 dark:text-blue-300/70 leading-relaxed text-xs">
-                                    A confirmation email has been sent to <strong>{owner.email}</strong>.
-                                    It contains your application reference number — please keep it handy
-                                    for any support queries.
-                                </p>
-                                <p className="text-blue-700/80 dark:text-blue-300/70 leading-relaxed text-xs">
-                                    If you don't see it within 10 minutes, check your spam/junk folder.
-                                    For urgent queries, reach us at{' '}
-                                    <a href="mailto:support@cinevault.in" className="underline font-medium">
-                                        support@cinevault.in
-                                    </a>
-                                </p>
-                            </CardContent>
-                        </Card>
+                        {/* ── Check inbox ── */}
+                        {owner.email && (
+                            <Card className="shadow-md border-0 bg-blue-50 dark:bg-blue-950/30 border-blue-200 dark:border-blue-800">
+                                <CardContent className="pt-5 pb-5 space-y-3 text-sm">
+                                    <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 font-semibold">
+                                        <Mail size={15} />
+                                        Check your inbox
+                                    </div>
+                                    <p className="text-blue-700/80 dark:text-blue-300/70 leading-relaxed text-xs">
+                                        A confirmation email has been sent to <strong>{owner.email}</strong>.
+                                        It contains your application reference number — please keep it handy for any support queries.
+                                    </p>
+                                    <p className="text-blue-700/80 dark:text-blue-300/70 leading-relaxed text-xs">
+                                        If you don't see it within 10 minutes, check your spam/junk folder.
+                                        For urgent queries, reach us at{' '}
+                                        <a href="mailto:support@cinevault.in" className="underline font-medium">
+                                            support@cinevault.in
+                                        </a>
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        )}
 
-                        {/* ── SLA Promise ── */}
+                        {/* ── SLA commitment ── */}
                         <Card className="shadow-md border-0">
                             <CardContent className="pt-5 pb-5">
                                 <div className="flex items-start gap-3">

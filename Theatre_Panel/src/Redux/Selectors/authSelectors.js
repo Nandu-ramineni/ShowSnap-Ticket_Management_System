@@ -7,3 +7,6 @@ export const selectAuthLoading     = (state) => state.auth.isLoading;
 export const selectIsHydrating     = (state) => state.auth.isHydrating;
 export const selectAuthError       = (state) => state.auth.error;
 export const selectSignupSuccess   = (state) => state.auth.signupSuccess;
+
+// Convenience: derive account status from the user object
+export const selectAccountStatus   = (state) => state.auth.user?.accountStatus ?? null;

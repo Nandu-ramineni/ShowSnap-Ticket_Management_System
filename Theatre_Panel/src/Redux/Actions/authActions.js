@@ -19,27 +19,53 @@ export const login = (email, password) => async (dispatch) => {
     try {
         dispatch({ type: ActionTypes.AUTH_LOGIN_REQUEST });
 
-        const { data } = await api.post('/auth/login', { email, password });
-        const { accessToken, refreshToken, user } = data.data;
+        const { data } = await api.post('/theatre-owner/login', { email, password });
 
-        // ── Persist tokens ──────────────────────────────────────────────────
-        Cookies.set('accessToken', accessToken, cookieOptions(1));     // 1 day
-        Cookies.set('refreshToken', refreshToken, cookieOptions(7));   // 7 days
+        // Backend returns: { data: { owner, accessToken, refreshToken } }
+        const { accessToken, refreshToken, owner } = data.data;
 
-        // ── Persist user for hydration across page refreshes ────────────────
-        localStorage.setItem('authUser', JSON.stringify(user));
+        // ── Persist tokens in cookies ────────────────────────────────────
+        Cookies.set('accessToken', accessToken, cookieOptions(1));    // 1 day
+        Cookies.set('refreshToken', refreshToken, cookieOptions(7));  // 7 days
+
+        // ── Persist owner for hydration across page refreshes ────────────
+        // SECURITY: Only store public, non-sensitive owner fields.
+        localStorage.setItem('authUser', JSON.stringify(owner));
 
         dispatch({
             type: ActionTypes.AUTH_LOGIN_SUCCESS,
-            payload: user,
+            payload: owner,
         });
+
+        return { success: true };
+
     } catch (error) {
+        const status  = error.response?.status;
+        const message = error.response?.data?.message || 'Login failed. Please check your credentials and try again.';
+
+        // ── 403 PENDING — account is under review ────────────────────────
+        // Backend throws ApiError.forbidden() for PENDING/REJECTED/inactive.
+        // We detect the "under review" case so the UI can redirect cleanly.
+        if (status === 403 && error.response?.data?.pending) {
+            dispatch({
+                type: ActionTypes.AUTH_LOGIN_FAILURE,
+                payload: message,
+            });
+
+            return {
+                success: false,
+                isPending: true,
+                error: message,
+                owner: error.response.data.owner,
+            };
+        }
+
         dispatch({
             type: ActionTypes.AUTH_LOGIN_FAILURE,
-            payload:
-                error.response?.data?.message ||
-                'Login failed. Please check your credentials and try again.',
+            payload: message,
         });
+
+        return { success: false, isPending: false, error: message };
     }
 };
 

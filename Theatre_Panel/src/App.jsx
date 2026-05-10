@@ -1,35 +1,54 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
 import { Toaster as Sonner } from 'sonner';
+
+import { hydrateAuth } from '@/Redux/Actions/authActions';
+
 import Login from './components/Auth/Login';
+import Signup from './components/Auth/Signup';
+import PrivacyPolicy from './components/Auth/PrivacyAgreementPolicy';
+import PendingApproval from './components/Auth/Pendingapproval';
+
 import Dashboard from './Pages/Dashboard/Dashboard';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 
-import Signup from './components/Auth/Signup';
-import PrivacyPolicy from './components/Auth/PrivacyAgreementPolicy';
-import PendingApproval from './components/Auth/Pendingapproval';
-
 function App() {
+    const dispatch = useDispatch();
+
+    // ── Hydrate session on every page load / hard refresh ──────────────────
+    // Must fire before any route guard checks isAuthenticated,
+    // so ProtectedRoute / PublicRoute wait for isHydrating === false.
+    useEffect(() => {
+        dispatch(hydrateAuth());
+    }, [dispatch]);
 
     return (
         <BrowserRouter>
             <Routes>
-                <Route path="/login" element={<Login />} />
-                    <Route path="/register" element={<Signup />} />
-                    <Route path="/privacy-agreement-policy" element={<PrivacyPolicy />} />
-                    <Route path="/pending" element={<PendingApproval />} />
 
-                {/* ── Root redirect ────────────────────────────────────────── */}
-                {/* <Route path="/" element={<Navigate to="/dashboard" replace />} /> */}
-
-                {/* <Route element={<PublicRoute />}>
+                {/* ── Public routes (redirect to /dashboard if already logged in) ── */}
+                <Route element={<PublicRoute />}>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Signup />} />
-                    <Route path="/privacy-agreement-policy" element={<PrivacyPolicy />} />
-                    <Route path="/pending-approval" element={<PendingApproval />} />
-                </Route> */}
-                {/* <Route
+                </Route>
+
+                {/* ── Semi-public: accessible to everyone (no auth check needed) ── */}
+                <Route path="/privacy-agreement-policy" element={<PrivacyPolicy />} />
+
+                {/*
+                    /pending is reachable:
+                    - Immediately after signup (no session yet)
+                    - After a 403 login attempt for a PENDING account
+                    We guard it inside the component itself (redirect to /login
+                    if no owner data in state or Redux).
+                */}
+                <Route path="/pending" element={<PendingApproval />} />
+
+                {/* ── Protected routes (redirect to /login if not authenticated) ── */}
+                <Route
                     element={
                         <ProtectedRoute>
                             <AppLayout />
@@ -48,22 +67,22 @@ function App() {
                     <Route path="/notifications" element={<Placeholder title="Notifications" />} />
                     <Route path="/team" element={<Placeholder title="Team Management" />} />
                     <Route path="/settings" element={<Placeholder title="Settings" />} />
-                </Route> */}
+                </Route>
 
-                {/* ── Catch-all ─────────────────────────────────────────────── */}
-                {/* <Route path="*" element={<Navigate to="/dashboard" replace />} /> */}
-                
+                {/* ── Root redirect ── */}
+                <Route path="/" element={<Navigate to="/dashboard" replace />} />
+
+                {/* ── Catch-all ── */}
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+
             </Routes>
+
             <Sonner theme="dark" position="top-right" />
         </BrowserRouter>
     );
 }
 
-
 // ─── Placeholder ──────────────────────────────────────────────────────────────
-// Swap each one out with the real page component when it's ready.
-// e.g. replace <Placeholder title="Bookings & Transactions" />
-//          with <Bookings />  and add the import at the top.
 const Placeholder = ({ title }) => (
     <div style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center',
