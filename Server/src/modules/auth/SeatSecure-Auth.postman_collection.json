@@ -1,55 +1,92 @@
 {
     "info": {
-        "name": "SeatSecure API — Auth",
+        "name": "SeatSecure API \u2014 Auth",
         "_postman_id": "seatsecure-auth-v2",
-        "description": "Complete auth flow for User, Theatre Owner (dedicated model), and Admin.\n\n**Setup**\n1. Import this collection.\n2. Import the `SeatSecure Environment` alongside it.\n3. Run requests in the order shown — scripts auto-fill tokens and IDs.\n\n**Auth Architecture (v2)**\n- `POST /auth/*` — Regular users (User model)\n- `POST /theatre-owner/*` — Theatre owners (TheatreOwner model, separate collection)\n- `GET|PATCH /admin/*` — Admin only (User model, role: admin)\n\n**Theatre Owner Flow**\n```\nPOST /theatre-owner/register  →  accountStatus: pending (no tokens)\n   ↓ admin reviews\nPATCH /admin/theatre-owners/:id/approve\n   ↓\nPOST /theatre-owner/login  →  tokens issued\n   ↓\nGET|PATCH /theatre-owner/profile\n```\n\n**⚠️ Before testing Admin routes**\nRun the seed script to create the first admin account:\n```\nADMIN_EMAIL=admin@seatsecure.com ADMIN_PASSWORD=Admin@123 ADMIN_NAME=\"System Admin\" node scripts/seed-admin.js\n```",
+        "description": "Complete auth flow for User, Theatre Owner (dedicated model), and Admin.\n\n**Setup**\n1. Import this collection.\n2. Import the `SeatSecure Environment` alongside it.\n3. Run requests in the order shown \u2014 scripts auto-fill tokens and IDs.\n\n**Auth Architecture (v2)**\n- `POST /auth/*` \u2014 Regular users (User model)\n- `POST /theatre-owner/*` \u2014 Theatre owners (TheatreOwner model, separate collection)\n- `GET|PATCH /admin/*` \u2014 Admin only (User model, role: admin)\n\n**Theatre Owner Flow**\n```\nPOST /theatre-owner/register  \u2192  accountStatus: pending (no tokens)\n   \u2193 admin reviews\nPATCH /admin/theatre-owners/:id/approve\n   \u2193\nPOST /theatre-owner/login  \u2192  tokens issued\n   \u2193\nGET|PATCH /theatre-owner/profile\n```\n\n**\u26a0\ufe0f Before testing Admin routes**\nRun the seed script to create the first admin account:\n```\nADMIN_EMAIL=admin@seatsecure.com ADMIN_PASSWORD=Admin@123 ADMIN_NAME=\"System Admin\" node scripts/seed-admin.js\n```",
         "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
     },
     "variable": [
-        { "key": "baseUrl",            "value": "http://localhost:5000/api/v1" },
-        { "key": "userToken",          "value": "" },
-        { "key": "userRefreshToken",   "value": "" },
-        { "key": "adminToken",         "value": "" },
-        { "key": "adminRefreshToken",  "value": "" },
-        { "key": "ownerToken",         "value": "" },
-        { "key": "ownerRefreshToken",  "value": "" },
-        { "key": "pendingOwnerId",     "value": "" },
-        { "key": "targetUserId",       "value": "" },
-        { "key": "secondOwnerId",      "value": "" }
+        {
+            "key": "baseUrl",
+            "value": "http://localhost:5000/api/v1"
+        },
+        {
+            "key": "userToken",
+            "value": ""
+        },
+        {
+            "key": "userRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "adminToken",
+            "value": ""
+        },
+        {
+            "key": "adminRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "ownerToken",
+            "value": ""
+        },
+        {
+            "key": "ownerRefreshToken",
+            "value": ""
+        },
+        {
+            "key": "pendingOwnerId",
+            "value": ""
+        },
+        {
+            "key": "targetUserId",
+            "value": ""
+        },
+        {
+            "key": "secondOwnerId",
+            "value": ""
+        }
     ],
     "item": [
         {
-            "name": "👤 User",
+            "name": "\ud83d\udc64 User",
             "item": [
                 {
-                    "name": "Register — User",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('userToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ User tokens saved');",
-                                "}",
-                                "if (res.data?.user) {",
-                                "  const id = res.data.user.id || res.data.user._id;",
-                                "  pm.collectionVariables.set('targetUserId', id);",
-                                "  console.log('✅ User ID saved:', id);",
-                                "}",
-                                "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                                "pm.test('Has user object', () => pm.expect(res.data.user).to.be.an('object'));",
-                                "pm.test('Has accessToken', () => pm.expect(res.data.accessToken).to.be.a('string'));",
-                                "pm.test('Role is user', () => pm.expect(res.data.user.role).to.eql('user'));",
-                                "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));"
-                            ]
+                    "name": "Register \u2014 User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 User tokens saved');",
+                                    "}",
+                                    "if (res.data?.user) {",
+                                    "  const id = res.data.user.id || res.data.user._id;",
+                                    "  pm.collectionVariables.set('targetUserId', id);",
+                                    "  console.log('\u2705 User ID saved:', id);",
+                                    "}",
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has user object', () => pm.expect(res.data.user).to.be.an('object'));",
+                                    "pm.test('Has accessToken', () => pm.expect(res.data.accessToken).to.be.a('string'));",
+                                    "pm.test('Role is user', () => pm.expect(res.data.user.role).to.eql('user'));",
+                                    "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"name\": \"Arjun Mehta\",\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\",\n  \"phone\": \"+919876543210\"\n}"
@@ -57,22 +94,29 @@
                     }
                 },
                 {
-                    "name": "Register — Validation Errors (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                                "const res = pm.response.json();",
-                                "pm.test('Has errors array', () => pm.expect(res.errors).to.be.an('array').that.is.not.empty);",
-                                "pm.test('success is false', () => pm.expect(res.success).to.be.false);"
-                            ]
+                    "name": "Register \u2014 Validation Errors (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has errors array', () => pm.expect(res.errors).to.be.an('array').that.is.not.empty);",
+                                    "pm.test('success is false', () => pm.expect(res.success).to.be.false);"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"name\": \"\",\n  \"email\": \"not-an-email\",\n  \"password\": \"weak\"\n}"
@@ -80,19 +124,26 @@
                     }
                 },
                 {
-                    "name": "Register — Duplicate Email (expect 409)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 409', () => pm.response.to.have.status(409));"
-                            ]
+                    "name": "Register \u2014 Duplicate Email (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"name\": \"Arjun Mehta\",\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\"\n}"
@@ -100,29 +151,36 @@
                     }
                 },
                 {
-                    "name": "Login — User",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('userToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ User tokens refreshed');",
-                                "}",
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.test('Has both tokens', () => {",
-                                "  pm.expect(res.data.accessToken).to.be.a('string');",
-                                "  pm.expect(res.data.refreshToken).to.be.a('string');",
-                                "});"
-                            ]
+                    "name": "Login \u2014 User",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 User tokens refreshed');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has both tokens', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.a('string');",
+                                    "  pm.expect(res.data.refreshToken).to.be.a('string');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"Secret@123\"\n}"
@@ -130,19 +188,26 @@
                     }
                 },
                 {
-                    "name": "Login — Wrong Password (expect 401)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                            ]
+                    "name": "Login \u2014 Wrong Password (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"WrongPass@999\"\n}"
@@ -151,33 +216,42 @@
                 },
                 {
                     "name": "Get Profile",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Has user data', () => pm.expect(res.data.user).to.be.an('object'));",
-                                "pm.test('No password in response', () => pm.expect(res.data.user.password).to.be.undefined);"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has user data', () => pm.expect(res.data.user).to.be.an('object'));",
+                                    "pm.test('No password in response', () => pm.expect(res.data.user.password).to.be.undefined);"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/auth/profile",
-                        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
                     }
                 },
                 {
-                    "name": "Get Profile — No Token (expect 401)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                            ]
+                    "name": "Get Profile \u2014 No Token (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/auth/profile"
@@ -185,23 +259,31 @@
                 },
                 {
                     "name": "Update Profile",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Name updated', () => pm.expect(res.data.user.name).to.eql('Arjun Kumar Mehta'));",
-                                "pm.test('City updated', () => pm.expect(res.data.user.preferredCity).to.eql('Mumbai'));"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Name updated', () => pm.expect(res.data.user.name).to.eql('Arjun Kumar Mehta'));",
+                                    "pm.test('City updated', () => pm.expect(res.data.user.preferredCity).to.eql('Mumbai'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/auth/profile",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{userToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -210,23 +292,31 @@
                     }
                 },
                 {
-                    "name": "Update Profile — Role Injection Attempt (ignored)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Role NOT changed to admin', () => pm.expect(res.data.user.role).to.eql('user'));"
-                            ]
+                    "name": "Update Profile \u2014 Role Injection Attempt (ignored)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Role NOT changed to admin', () => pm.expect(res.data.user.role).to.eql('user'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/auth/profile",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{userToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -236,28 +326,35 @@
                 },
                 {
                     "name": "Refresh Token",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('userToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ Tokens rotated');",
-                                "}",
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.test('New tokens issued', () => {",
-                                "  pm.expect(res.data.accessToken).to.be.a('string');",
-                                "  pm.expect(res.data.refreshToken).to.be.a('string');",
-                                "});"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('userToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('userRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 Tokens rotated');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('New tokens issued', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.a('string');",
+                                    "  pm.expect(res.data.refreshToken).to.be.a('string');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/refresh-token",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}"
@@ -266,21 +363,29 @@
                 },
                 {
                     "name": "Change Password",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "console.log('⚠️ All sessions terminated. Re-login to get new tokens.');"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "console.log('\u26a0\ufe0f All sessions terminated. Re-login to get new tokens.');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/auth/change-password",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{userToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -289,21 +394,29 @@
                     }
                 },
                 {
-                    "name": "Change Password — Wrong Current (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                            ]
+                    "name": "Change Password \u2014 Wrong Current (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/auth/change-password",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{userToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -313,20 +426,27 @@
                 },
                 {
                     "name": "Logout",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.collectionVariables.set('userRefreshToken', '');",
-                                "console.log('✅ Logged out, refresh token cleared');"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('userRefreshToken', '');",
+                                    "console.log('\u2705 Logged out, refresh token cleared');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/logout",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"refreshToken\": \"{{userRefreshToken}}\"\n}"
@@ -335,60 +455,74 @@
                 },
                 {
                     "name": "Logout All Sessions",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.collectionVariables.set('userToken', '');",
-                                "pm.collectionVariables.set('userRefreshToken', '');",
-                                "console.log('✅ All sessions terminated');"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('userToken', '');",
+                                    "pm.collectionVariables.set('userRefreshToken', '');",
+                                    "console.log('\u2705 All sessions terminated');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/logout-all",
-                        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
                     }
                 }
             ]
         },
         {
-            "name": "🎭 Theatre Owner",
-            "description": "All theatre owner auth lives at /theatre-owner/* (dedicated TheatreOwner collection, separate from User).\n\nFlow:\n1. Register → accountStatus: pending, no tokens\n2. Admin approves via PATCH /admin/theatre-owners/:id/approve\n3. Login → tokens issued\n4. Use ownerToken for profile endpoints",
+            "name": "\ud83c\udfad Theatre Owner",
+            "description": "All theatre owner auth lives at /theatre-owner/* (dedicated TheatreOwner collection, separate from User).\n\nFlow:\n1. Register \u2192 accountStatus: pending, no tokens\n2. Admin approves via PATCH /admin/theatre-owners/:id/approve\n3. Login \u2192 tokens issued\n4. Use ownerToken for profile endpoints",
             "item": [
                 {
-                    "name": "Register — Theatre Owner (Full)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "pm.test('Status 201', () => pm.response.to.have.status(201));",
-                                "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
-                                "pm.test('accountStatus is pending', () => pm.expect(res.data.owner.accountStatus).to.eql('pending'));",
-                                "pm.test('No tokens issued for pending owner', () => {",
-                                "  pm.expect(res.data.accessToken).to.be.undefined;",
-                                "  pm.expect(res.data.refreshToken).to.be.undefined;",
-                                "});",
-                                "pm.test('Has theatreInfo', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
-                                "pm.test('Has location', () => pm.expect(res.data.owner.location).to.be.an('object'));",
-                                "pm.test('Has amenities', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
-                                "pm.test('Has cancellationPolicy', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));",
-                                "pm.test('isMultiplex is true', () => pm.expect(res.data.owner.isMultiplex).to.be.true);",
-                                "if (res.data?.owner) {",
-                                "  const id = res.data.owner.id || res.data.owner._id;",
-                                "  pm.collectionVariables.set('pendingOwnerId', id);",
-                                "  console.log('✅ Pending owner ID saved:', id);",
-                                "}"
-                            ]
+                    "name": "Register \u2014 Theatre Owner (Full)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                    "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
+                                    "pm.test('accountStatus is pending', () => pm.expect(res.data.owner.accountStatus).to.eql('pending'));",
+                                    "pm.test('No tokens issued for pending owner', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.undefined;",
+                                    "  pm.expect(res.data.refreshToken).to.be.undefined;",
+                                    "});",
+                                    "pm.test('Has theatreInfo', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
+                                    "pm.test('Has location', () => pm.expect(res.data.owner.location).to.be.an('object'));",
+                                    "pm.test('Has amenities', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
+                                    "pm.test('Has cancellationPolicy', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));",
+                                    "pm.test('isMultiplex is true', () => pm.expect(res.data.owner.isMultiplex).to.be.true);",
+                                    "if (res.data?.owner) {",
+                                    "  const id = res.data.owner.id || res.data.owner._id;",
+                                    "  pm.collectionVariables.set('pendingOwnerId', id);",
+                                    "  console.log('\u2705 Pending owner ID saved:', id);",
+                                    "}"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\",\n  \"isMultiplex\": true,\n  \"theatreInfo\": {\n    \"theatreName\": \"INOX Multiplex\",\n    \"website\": \"https://inoxmovies.com\",\n    \"contactPhone\": \"+918800123456\",\n    \"contactEmail\": \"contact@inoxcinemas.com\"\n  },\n  \"location\": {\n    \"streetAddress\": \"42 MG Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560038\"\n  },\n  \"amenities\": {\n    \"parking\": true,\n    \"foodCourt\": true,\n    \"wheelchairAccess\": true,\n    \"mTicket\": true,\n    \"threeD\": true,\n    \"dolbySound\": true,\n    \"fourDX\": false,\n    \"reclinerSeats\": true,\n    \"atm\": true,\n    \"playing\": true,\n    \"lounge\": false\n  },\n  \"cancellationPolicy\": {\n    \"allowCancellations\": true,\n    \"cutoffHours\": 3,\n    \"refundPercentage\": 75\n  }\n}"
@@ -396,22 +530,29 @@
                     }
                 },
                 {
-                    "name": "Register — Missing Required Fields (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                                "const res = pm.response.json();",
-                                "pm.test('Has errors array', () => pm.expect(res.errors).to.be.an('array').that.is.not.empty);",
-                                "pm.test('success is false', () => pm.expect(res.success).to.be.false);"
-                            ]
+                    "name": "Register \u2014 Missing Required Fields (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has errors array', () => pm.expect(res.errors).to.be.an('array').that.is.not.empty);",
+                                    "pm.test('success is false', () => pm.expect(res.success).to.be.false);"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"not-an-email\",\n  \"password\": \"weak\"\n}"
@@ -419,24 +560,31 @@
                     }
                 },
                 {
-                    "name": "Register — Missing Location Fields (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                                "const res = pm.response.json();",
-                                "pm.test('Pincode error present', () => {",
-                                "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
-                                "  pm.expect(msgs.toLowerCase()).to.include('pincode');",
-                                "});"
-                            ]
+                    "name": "Register \u2014 Missing Location Fields (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Pincode error present', () => {",
+                                    "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
+                                    "  pm.expect(msgs.toLowerCase()).to.include('pincode');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"test@theatre.com\",\n  \"password\": \"Valid@123\",\n  \"theatreInfo\": {\n    \"theatreName\": \"Test Theatre\"\n  },\n  \"location\": {\n    \"streetAddress\": \"123 Main St\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"INVALID\"\n  }\n}"
@@ -444,24 +592,31 @@
                     }
                 },
                 {
-                    "name": "Register — Invalid Refund Percentage (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                                "const res = pm.response.json();",
-                                "pm.test('Refund percentage error present', () => {",
-                                "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
-                                "  pm.expect(msgs.toLowerCase()).to.include('refund');",
-                                "});"
-                            ]
+                    "name": "Register \u2014 Invalid Refund Percentage (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Refund percentage error present', () => {",
+                                    "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
+                                    "  pm.expect(msgs.toLowerCase()).to.include('refund');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"bad@theatre.com\",\n  \"password\": \"Valid@123\",\n  \"theatreInfo\": { \"theatreName\": \"Bad Theatre\" },\n  \"location\": {\n    \"streetAddress\": \"1 Bad Street\",\n    \"city\": \"Delhi\",\n    \"state\": \"Delhi\",\n    \"pincode\": \"110001\"\n  },\n  \"cancellationPolicy\": {\n    \"allowCancellations\": true,\n    \"cutoffHours\": 2,\n    \"refundPercentage\": 150\n  }\n}"
@@ -469,19 +624,26 @@
                     }
                 },
                 {
-                    "name": "Register — Duplicate Email (expect 409)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 409', () => pm.response.to.have.status(409));"
-                            ]
+                    "name": "Register \u2014 Duplicate Email (expect 409)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/register",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\",\n  \"theatreInfo\": { \"theatreName\": \"INOX Duplicate\" },\n  \"location\": {\n    \"streetAddress\": \"1 Main St\",\n    \"city\": \"Mumbai\",\n    \"state\": \"Maharashtra\",\n    \"pincode\": \"400001\"\n  }\n}"
@@ -489,21 +651,28 @@
                     }
                 },
                 {
-                    "name": "Login — Pending Owner (expect 403)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 403', () => pm.response.to.have.status(403));",
-                                "const res = pm.response.json();",
-                                "pm.test('Pending message shown', () => pm.expect(res.message).to.include('under review'));"
-                            ]
+                    "name": "Login \u2014 Pending Owner (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Pending message shown', () => pm.expect(res.message).to.include('under review'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\"\n}"
@@ -511,19 +680,26 @@
                     }
                 },
                 {
-                    "name": "Login — Wrong Password (expect 401)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                            ]
+                    "name": "Login \u2014 Wrong Password (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"WrongPass@999\"\n}"
@@ -531,30 +707,37 @@
                     }
                 },
                 {
-                    "name": "Login — Approved Owner (run AFTER admin approves)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('ownerToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('ownerRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ Owner tokens saved');",
-                                "}",
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
-                                "pm.test('accountStatus is active', () => pm.expect(res.data.owner.accountStatus).to.eql('active'));",
-                                "pm.test('Has theatreInfo in login response', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
-                                "pm.test('Has amenities in login response', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
-                                "pm.test('Has cancellationPolicy in login response', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));"
-                            ]
+                    "name": "Login \u2014 Approved Owner (run AFTER admin approves)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('ownerToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('ownerRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 Owner tokens saved');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
+                                    "pm.test('accountStatus is active', () => pm.expect(res.data.owner.accountStatus).to.eql('active'));",
+                                    "pm.test('Has theatreInfo in login response', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
+                                    "pm.test('Has amenities in login response', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
+                                    "pm.test('Has cancellationPolicy in login response', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"priya@inoxcinemas.com\",\n  \"password\": \"Owner@123\"\n}"
@@ -562,83 +745,107 @@
                     }
                 },
                 {
-                    "name": "Get Profile — Owner",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
-                                "pm.test('No password in response', () => pm.expect(res.data.owner.password).to.be.undefined);",
-                                "pm.test('Has theatreInfo', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
-                                "pm.test('Has location', () => pm.expect(res.data.owner.location).to.be.an('object'));",
-                                "pm.test('Has amenities', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
-                                "pm.test('Has cancellationPolicy', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));",
-                                "pm.test('Has isMultiplex flag', () => pm.expect(res.data.owner.isMultiplex).to.be.a('boolean'));"
-                            ]
+                    "name": "Get Profile \u2014 Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
+                                    "pm.test('No password in response', () => pm.expect(res.data.owner.password).to.be.undefined);",
+                                    "pm.test('Has theatreInfo', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
+                                    "pm.test('Has location', () => pm.expect(res.data.owner.location).to.be.an('object'));",
+                                    "pm.test('Has amenities', () => pm.expect(res.data.owner.amenities).to.be.an('object'));",
+                                    "pm.test('Has cancellationPolicy', () => pm.expect(res.data.owner.cancellationPolicy).to.be.an('object'));",
+                                    "pm.test('Has isMultiplex flag', () => pm.expect(res.data.owner.isMultiplex).to.be.a('boolean'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/theatre-owner/profile",
-                        "header": [{ "key": "Authorization", "value": "Bearer {{ownerToken}}" }]
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            }
+                        ]
                     }
                 },
                 {
-                    "name": "Get Profile — No Token (expect 401)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                            ]
+                    "name": "Get Profile \u2014 No Token (expect 401)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/theatre-owner/profile"
                     }
                 },
                 {
-                    "name": "Get Profile — User Token on Owner Route (expect 403)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 403 — wrong role', () => pm.response.to.have.status(403));"
-                            ]
+                    "name": "Get Profile \u2014 User Token on Owner Route (expect 403)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 403 \u2014 wrong role', () => pm.response.to.have.status(403));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/theatre-owner/profile",
-                        "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{userToken}}"
+                            }
+                        ]
                     }
                 },
                 {
-                    "name": "Update Profile — Amenities + Cancellation Policy",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
-                                "pm.test('lounge amenity updated to true', () => pm.expect(res.data.owner.amenities.lounge).to.be.true);",
-                                "pm.test('fourDX amenity updated to true', () => pm.expect(res.data.owner.amenities.fourDX).to.be.true);",
-                                "pm.test('cutoffHours updated', () => pm.expect(res.data.owner.cancellationPolicy.cutoffHours).to.eql(6));",
-                                "pm.test('refundPercentage updated', () => pm.expect(res.data.owner.cancellationPolicy.refundPercentage).to.eql(50));",
-                                "pm.test('isMultiplex updated to false', () => pm.expect(res.data.owner.isMultiplex).to.be.false);"
-                            ]
+                    "name": "Update Profile \u2014 Amenities + Cancellation Policy",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Has owner object', () => pm.expect(res.data.owner).to.be.an('object'));",
+                                    "pm.test('lounge amenity updated to true', () => pm.expect(res.data.owner.amenities.lounge).to.be.true);",
+                                    "pm.test('fourDX amenity updated to true', () => pm.expect(res.data.owner.amenities.fourDX).to.be.true);",
+                                    "pm.test('cutoffHours updated', () => pm.expect(res.data.owner.cancellationPolicy.cutoffHours).to.eql(6));",
+                                    "pm.test('refundPercentage updated', () => pm.expect(res.data.owner.cancellationPolicy.refundPercentage).to.eql(50));",
+                                    "pm.test('isMultiplex updated to false', () => pm.expect(res.data.owner.isMultiplex).to.be.false);"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/theatre-owner/profile",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{ownerToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -647,23 +854,31 @@
                     }
                 },
                 {
-                    "name": "Update Profile — theatreName Immutable (silently ignored)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('theatreName NOT changed', () => pm.expect(res.data.owner.theatreInfo.theatreName).to.eql('INOX Multiplex'));"
-                            ]
+                    "name": "Update Profile \u2014 theatreName Immutable (silently ignored)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('theatreName NOT changed', () => pm.expect(res.data.owner.theatreInfo.theatreName).to.eql('INOX Multiplex'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/theatre-owner/profile",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{ownerToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -672,26 +887,34 @@
                     }
                 },
                 {
-                    "name": "Update Profile — Invalid Cutoff Hours (expect 400)",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 400', () => pm.response.to.have.status(400));",
-                                "const res = pm.response.json();",
-                                "pm.test('cutoffHours error present', () => {",
-                                "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
-                                "  pm.expect(msgs.toLowerCase()).to.include('cutoff');",
-                                "});"
-                            ]
+                    "name": "Update Profile \u2014 Invalid Cutoff Hours (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('cutoffHours error present', () => {",
+                                    "  const msgs = res.errors.map(e => e.msg || e.message || '').join(' ');",
+                                    "  pm.expect(msgs.toLowerCase()).to.include('cutoff');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/theatre-owner/profile",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{ownerToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -700,29 +923,36 @@
                     }
                 },
                 {
-                    "name": "Refresh Token — Owner",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('ownerToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('ownerRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ Owner tokens rotated');",
-                                "}",
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.test('New tokens issued', () => {",
-                                "  pm.expect(res.data.accessToken).to.be.a('string');",
-                                "  pm.expect(res.data.refreshToken).to.be.a('string');",
-                                "});"
-                            ]
+                    "name": "Refresh Token \u2014 Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('ownerToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('ownerRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 Owner tokens rotated');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('New tokens issued', () => {",
+                                    "  pm.expect(res.data.accessToken).to.be.a('string');",
+                                    "  pm.expect(res.data.refreshToken).to.be.a('string');",
+                                    "});"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/refresh-token",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"refreshToken\": \"{{ownerRefreshToken}}\"\n}"
@@ -730,22 +960,30 @@
                     }
                 },
                 {
-                    "name": "Change Password — Owner",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "console.log('⚠️ All owner sessions terminated. Re-login to get new tokens.');"
-                            ]
+                    "name": "Change Password \u2014 Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "console.log('\u26a0\ufe0f All owner sessions terminated. Re-login to get new tokens.');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "PATCH",
                         "url": "{{baseUrl}}/theatre-owner/change-password",
                         "header": [
-                            { "key": "Authorization", "value": "Bearer {{ownerToken}}" },
-                            { "key": "Content-Type",   "value": "application/json" }
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
                         ],
                         "body": {
                             "mode": "raw",
@@ -754,21 +992,28 @@
                     }
                 },
                 {
-                    "name": "Logout — Owner",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.collectionVariables.set('ownerRefreshToken', '');",
-                                "console.log('✅ Owner logged out');"
-                            ]
+                    "name": "Logout \u2014 Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('ownerRefreshToken', '');",
+                                    "console.log('\u2705 Owner logged out');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/logout",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"refreshToken\": \"{{ownerRefreshToken}}\"\n}"
@@ -776,52 +1021,66 @@
                     }
                 },
                 {
-                    "name": "Logout All — Owner",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.collectionVariables.set('ownerToken', '');",
-                                "pm.collectionVariables.set('ownerRefreshToken', '');",
-                                "console.log('✅ All owner sessions terminated');"
-                            ]
+                    "name": "Logout All \u2014 Owner",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.collectionVariables.set('ownerToken', '');",
+                                    "pm.collectionVariables.set('ownerRefreshToken', '');",
+                                    "console.log('\u2705 All owner sessions terminated');"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/theatre-owner/logout-all",
-                        "header": [{ "key": "Authorization", "value": "Bearer {{ownerToken}}" }]
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            }
+                        ]
                     }
                 }
             ]
         },
         {
-            "name": "🛡️ Admin",
+            "name": "\ud83d\udee1\ufe0f Admin",
             "description": "Admin routes for managing both User-based theatre_owners (legacy) and the new dedicated TheatreOwner collection.",
             "item": [
                 {
-                    "name": "Login — Admin",
+                    "name": "Login \u2014 Admin",
                     "description": "Run the seed script first:\nADMIN_EMAIL=admin@seatsecure.com ADMIN_PASSWORD=Admin@123 ADMIN_NAME=\"System Admin\" node scripts/seed-admin.js",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "const res = pm.response.json();",
-                                "if (res.data?.accessToken) {",
-                                "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
-                                "  pm.collectionVariables.set('adminRefreshToken', res.data.refreshToken);",
-                                "  console.log('✅ Admin tokens saved');",
-                                "}",
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "pm.test('Role is admin', () => pm.expect(res.data.user.role).to.eql('admin'));"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "const res = pm.response.json();",
+                                    "if (res.data?.accessToken) {",
+                                    "  pm.collectionVariables.set('adminToken', res.data.accessToken);",
+                                    "  pm.collectionVariables.set('adminRefreshToken', res.data.refreshToken);",
+                                    "  console.log('\u2705 Admin tokens saved');",
+                                    "}",
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "pm.test('Role is admin', () => pm.expect(res.data.user.role).to.eql('admin'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "POST",
                         "url": "{{baseUrl}}/auth/login",
-                        "header": [{ "key": "Content-Type", "value": "application/json" }],
+                        "header": [
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
                         "body": {
                             "mode": "raw",
                             "raw": "{\n  \"email\": \"admin@seatsecure.com\",\n  \"password\": \"Admin@123\"\n}"
@@ -829,445 +1088,641 @@
                     }
                 },
                 {
-                    "name": "── TheatreOwner Collection ──",
+                    "name": "\u2500\u2500 TheatreOwner Approvals \u2500\u2500",
                     "item": [
                         {
+                            "name": "List Pending Theatre Owner Approvals",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Has users array', () => pm.expect(res.data.users).to.be.an('array'));",
+                                            "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));",
+                                            "// Auto-capture first pending owner ID",
+                                            "if (res.data.users && res.data.users.length > 0) {",
+                                            "  pm.collectionVariables.set('pendingOwnerId', res.data.users[0]._id);",
+                                            "  console.log('pendingOwnerId set to:', res.data.users[0]._id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals?page=1&limit=20",
+                                    "query": [
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20"
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                        {
                             "name": "List All Theatre Owners",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Has owners array', () => pm.expect(res.data.owners).to.be.an('array'));",
-                                        "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Has users array', () => pm.expect(res.data.users).to.be.an('array'));",
+                                            "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/admin/theatre-owners?page=1&limit=20",
+                                    "raw": "{{baseUrl}}/admin/owners?page=1&limit=20",
                                     "query": [
-                                        { "key": "page",  "value": "1" },
-                                        { "key": "limit", "value": "20" }
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20"
+                                        }
                                     ]
-                                },
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                }
                             }
                         },
                         {
-                            "name": "List Theatre Owners — Filter by Status (pending)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('All results are pending', () => {",
-                                        "  res.data.owners.forEach(o => pm.expect(o.accountStatus).to.eql('pending'));",
-                                        "});"
-                                    ]
+                            "name": "List Theatre Owners \u2014 Filter by Status (pending)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('All owners are pending', () => {",
+                                            "  if (res.data.users.length > 0) {",
+                                            "    res.data.users.forEach(u => pm.expect(u.accountStatus).to.eql('pending'));",
+                                            "  }",
+                                            "});"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
                                 "url": {
-                                    "raw": "{{baseUrl}}/admin/theatre-owners?status=pending",
-                                    "query": [{ "key": "status", "value": "pending" }]
-                                },
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
-                            }
-                        },
-                        {
-                            "name": "List Theatre Owners — Invalid Status (expect 400)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                                    ]
-                                }
-                            }],
-                            "request": {
-                                "method": "GET",
-                                "url": {
-                                    "raw": "{{baseUrl}}/admin/theatre-owners?status=godmode",
-                                    "query": [{ "key": "status", "value": "godmode" }]
-                                },
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
-                            }
-                        },
-                        {
-                            "name": "List Pending Theatre Owners",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Has owners array', () => pm.expect(res.data.owners).to.be.an('array'));",
-                                        "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));",
-                                        "if (res.data.owners.length > 0) {",
-                                        "  const id = res.data.owners[0].id || res.data.owners[0]._id;",
-                                        "  pm.collectionVariables.set('pendingOwnerId', id);",
-                                        "  console.log('✅ First pending owner ID saved:', id);",
-                                        "}"
-                                    ]
-                                }
-                            }],
-                            "request": {
-                                "method": "GET",
-                                "url": {
-                                    "raw": "{{baseUrl}}/admin/theatre-owners/pending?page=1&limit=20",
+                                    "raw": "{{baseUrl}}/admin/owners?status=pending",
                                     "query": [
-                                        { "key": "page",  "value": "1" },
-                                        { "key": "limit", "value": "20" }
+                                        {
+                                            "key": "status",
+                                            "value": "pending"
+                                        }
                                     ]
-                                },
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                }
+                            }
+                        },
+                        {
+                            "name": "List Theatre Owners \u2014 Invalid Status (expect 400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
+                            "request": {
+                                "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/owners?status=godmode",
+                                    "query": [
+                                        {
+                                            "key": "status",
+                                            "value": "godmode"
+                                        }
+                                    ]
+                                }
                             }
                         },
                         {
                             "name": "Approve Theatre Owner",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('accountStatus is active', () => pm.expect(res.data.owner.accountStatus).to.eql('active'));",
-                                        "pm.test('Has theatreInfo', () => pm.expect(res.data.owner.theatreInfo).to.be.an('object'));",
-                                        "console.log('✅ Owner approved. Now run: Login — Approved Owner.');"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Message is approved', () => pm.expect(res.message).to.include('approved'));",
+                                            "pm.test('accountStatus is active', () => pm.expect(res.data.user.accountStatus).to.eql('active'));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/approve",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/approve"
+                                }
                             }
                         },
                         {
                             "name": "Approve Already-Reviewed Owner (expect 409)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 409', () => pm.response.to.have.status(409));"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 409', () => pm.response.to.have.status(409));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/approve",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/{{pendingOwnerId}}/approve"
+                                }
                             }
                         },
                         {
                             "name": "Register Second Owner (to reject)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "const res = pm.response.json();",
-                                        "if (res.data?.owner) {",
-                                        "  const id = res.data.owner.id || res.data.owner._id;",
-                                        "  pm.collectionVariables.set('secondOwnerId', id);",
-                                        "  pm.collectionVariables.set('pendingOwnerId', id);",
-                                        "  console.log('✅ Second owner ID saved for rejection test:', id);",
-                                        "}",
-                                        "pm.test('Status 201', () => pm.response.to.have.status(201));"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                                            "const res = pm.response.json();",
+                                            "pm.collectionVariables.set('secondOwnerId', res.data.owner._id);",
+                                            "console.log('secondOwnerId set to:', res.data.owner._id);"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "POST",
-                                "url": "{{baseUrl}}/theatre-owner/register",
-                                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/theatre-owner/register"
+                                },
                                 "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\",\n  \"isMultiplex\": false,\n  \"theatreInfo\": {\n    \"theatreName\": \"PVR Single Screen\",\n    \"contactPhone\": \"+919999988888\",\n    \"contactEmail\": \"raj@pvr.com\"\n  },\n  \"location\": {\n    \"streetAddress\": \"15 Connaught Place\",\n    \"city\": \"Delhi\",\n    \"state\": \"Delhi\",\n    \"pincode\": \"110001\"\n  },\n  \"amenities\": {\n    \"parking\": true,\n    \"foodCourt\": false\n  },\n  \"cancellationPolicy\": {\n    \"allowCancellations\": false\n  }\n}"
+                                    "mode": "formdata",
+                                    "formdata": [
+                                        {
+                                            "key": "email",
+                                            "value": "raj@pvr.com",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "password",
+                                            "value": "Reject@123",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "name",
+                                            "value": "Raj Kumar",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "theatreName",
+                                            "value": "PVR Single Screen",
+                                            "type": "text"
+                                        },
+                                        {
+                                            "key": "isMultiplex",
+                                            "value": "false",
+                                            "type": "text"
+                                        }
+                                    ]
                                 }
                             }
                         },
                         {
                             "name": "Reject Theatre Owner",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('accountStatus is rejected', () => pm.expect(res.data.owner.accountStatus).to.eql('rejected'));"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Message includes rejected', () => pm.expect(res.message).to.include('rejected'));",
+                                            "pm.test('accountStatus is rejected', () => pm.expect(res.data.owner.accountStatus).to.eql('rejected'));",
+                                            "pm.test('rejectionReason present', () => pm.expect(res.data.owner).to.have.property('rejectionReason'));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/reject",
                                 "header": [
-                                    { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-                                    { "key": "Content-Type",   "value": "application/json" }
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
                                 ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/{{secondOwnerId}}/reject"
+                                },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n  \"reason\": \"Incomplete business registration documents. GST certificate missing.\"\n}"
+                                    "raw": "{\n  \"reason\": \"Incomplete business registration documents. GST certificate missing.\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
                                 }
                             }
                         },
                         {
-                            "name": "Reject — Missing Reason (expect 400)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                                    ]
+                            "name": "Reject \u2014 Missing Reason (expect 400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Has validation error', () => pm.expect(res.message).to.include('reason'));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/reject",
                                 "header": [
-                                    { "key": "Authorization", "value": "Bearer {{adminToken}}" },
-                                    { "key": "Content-Type",   "value": "application/json" }
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
                                 ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/{{secondOwnerId}}/reject"
+                                },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n  \"reason\": \"\"\n}"
+                                    "raw": "{\n  \"reason\": \"\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
                                 }
                             }
                         },
                         {
-                            "name": "Login — Rejected Owner (expect 403)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 403', () => pm.response.to.have.status(403));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Rejected message shown', () => pm.expect(res.message).to.include('rejected'));"
-                                    ]
+                            "name": "Reject \u2014 Reason Too Long (expect 400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
+                            "request": {
+                                "method": "PATCH",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/{{secondOwnerId}}/reject"
+                                },
+                                "body": {
+                                    "mode": "raw",
+                                    "raw": "{\n  \"reason\": \"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        {
+                            "name": "Login \u2014 Rejected Owner (expect 403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
+                                }
+                            ],
                             "request": {
                                 "method": "POST",
-                                "url": "{{baseUrl}}/theatre-owner/login",
-                                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/theatre-owner/login"
+                                },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\"\n}"
+                                    "raw": "{\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
                                 }
                             }
                         },
                         {
-                            "name": "Suspend Theatre Owner",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('isActive is false', () => pm.expect(res.data.owner.isActive).to.be.false);"
-                                    ]
+                            "name": "Approve \u2014 Invalid ID (expect 400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/suspend",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
-                            }
-                        },
-                        {
-                            "name": "Login — Suspended Owner (expect 403)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 403', () => pm.response.to.have.status(403));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Suspended message shown', () => pm.expect(res.message).to.include('suspended'));"
-                                    ]
-                                }
-                            }],
-                            "request": {
-                                "method": "POST",
-                                "url": "{{baseUrl}}/theatre-owner/login",
-                                "header": [{ "key": "Content-Type", "value": "application/json" }],
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n  \"email\": \"raj@pvr.com\",\n  \"password\": \"Reject@123\"\n}"
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals/not-a-mongo-id/approve"
                                 }
                             }
                         },
                         {
-                            "name": "Reactivate Theatre Owner",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('isActive is true', () => pm.expect(res.data.owner.isActive).to.be.true);"
-                                    ]
+                            "name": "List Pending Approvals \u2014 No Token (expect 401)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
-                            "request": {
-                                "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/{{pendingOwnerId}}/reactivate",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
-                            }
-                        },
-                        {
-                            "name": "Approve — Invalid ID (expect 400)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                                    ]
-                                }
-                            }],
-                            "request": {
-                                "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/theatre-owners/not-a-mongo-id/approve",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
-                            }
-                        },
-                        {
-                            "name": "List Theatre Owners — No Token (expect 401)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 401', () => pm.response.to.have.status(401));"
-                                    ]
-                                }
-                            }],
+                            ],
                             "request": {
                                 "method": "GET",
-                                "url": "{{baseUrl}}/admin/theatre-owners"
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals"
+                                }
                             }
                         },
                         {
-                            "name": "List Theatre Owners — User Token (expect 403)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 403', () => pm.response.to.have.status(403));"
-                                    ]
+                            "name": "List Pending Approvals \u2014 User Token (expect 403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "GET",
-                                "url": "{{baseUrl}}/admin/theatre-owners",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{userToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{userToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/approvals"
+                                }
                             }
                         }
                     ]
                 },
                 {
-                    "name": "── User Management ──",
+                    "name": "\u2500\u2500 User Management \u2500\u2500",
                     "item": [
                         {
-                            "name": "Get Pending Approvals (legacy User model)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Has users array', () => pm.expect(res.data.users).to.be.an('array'));",
-                                        "pm.test('Has pagination', () => pm.expect(res.data.pagination).to.be.an('object'));"
-                                    ]
+                            "name": "Get Pending Approvals (User model)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Has users', () => pm.expect(res.data.users).to.be.an('array'));",
+                                            "if (res.data.users.length > 0) {",
+                                            "  pm.collectionVariables.set('targetUserId', res.data.users[0]._id);",
+                                            "}"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "GET",
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
                                 "url": {
                                     "raw": "{{baseUrl}}/admin/approvals?page=1&limit=20",
                                     "query": [
-                                        { "key": "page",  "value": "1" },
-                                        { "key": "limit", "value": "20" }
+                                        {
+                                            "key": "page",
+                                            "value": "1"
+                                        },
+                                        {
+                                            "key": "limit",
+                                            "value": "20"
+                                        }
                                     ]
-                                },
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                }
                             }
                         },
                         {
                             "name": "Suspend User",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('isActive is false', () => pm.expect(res.data.user.isActive).to.be.false);"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('Message includes suspended', () => pm.expect(res.message).to.include('suspended'));",
+                                            "pm.test('isActive is false', () => pm.expect(res.data.user.isActive).to.be.false);"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/users/{{targetUserId}}/suspend",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users/{{targetUserId}}/suspend"
+                                }
                             }
                         },
                         {
-                            "name": "Login — Suspended User (expect 403)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 403', () => pm.response.to.have.status(403));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('Suspended message shown', () => pm.expect(res.message).to.include('suspended'));"
-                                    ]
+                            "name": "Login \u2014 Suspended User (expect 403)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "POST",
-                                "url": "{{baseUrl}}/auth/login",
-                                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                                "header": [],
+                                "url": {
+                                    "raw": "{{baseUrl}}/auth/login"
+                                },
                                 "body": {
                                     "mode": "raw",
-                                    "raw": "{\n  \"email\": \"arjun@example.com\",\n  \"password\": \"NewSecret@456\"\n}"
+                                    "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"User@1234\"\n}",
+                                    "options": {
+                                        "raw": {
+                                            "language": "json"
+                                        }
+                                    }
                                 }
                             }
                         },
                         {
                             "name": "Reactivate User",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                        "const res = pm.response.json();",
-                                        "pm.test('isActive is true', () => pm.expect(res.data.user.isActive).to.be.true);"
-                                    ]
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                            "const res = pm.response.json();",
+                                            "pm.test('isActive is true', () => pm.expect(res.data.user.isActive).to.be.true);"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/users/{{targetUserId}}/reactivate",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users/{{targetUserId}}/reactivate"
+                                }
                             }
                         },
                         {
-                            "name": "Suspend — Invalid ID (expect 400)",
-                            "event": [{
-                                "listen": "test",
-                                "script": {
-                                    "exec": [
-                                        "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                                    ]
+                            "name": "Suspend \u2014 Invalid ID (expect 400)",
+                            "event": [
+                                {
+                                    "listen": "test",
+                                    "script": {
+                                        "exec": [
+                                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                        ],
+                                        "type": "text/javascript"
+                                    }
                                 }
-                            }],
+                            ],
                             "request": {
                                 "method": "PATCH",
-                                "url": "{{baseUrl}}/admin/users/not-a-mongo-id/suspend",
-                                "header": [{ "key": "Authorization", "value": "Bearer {{adminToken}}" }]
+                                "header": [
+                                    {
+                                        "key": "Authorization",
+                                        "value": "Bearer {{adminToken}}"
+                                    }
+                                ],
+                                "url": {
+                                    "raw": "{{baseUrl}}/admin/users/not-a-mongo-id/suspend"
+                                }
                             }
                         }
                     ]
@@ -1275,21 +1730,23 @@
             ]
         },
         {
-            "name": "🔧 System",
+            "name": "\ud83d\udd27 System",
             "item": [
                 {
                     "name": "Health Check",
-                    "event": [{
-                        "listen": "test",
-                        "script": {
-                            "exec": [
-                                "pm.test('Status 200', () => pm.response.to.have.status(200));",
-                                "const res = pm.response.json();",
-                                "pm.test('Status is ok', () => pm.expect(res.status).to.eql('ok'));",
-                                "pm.test('Has timestamp', () => pm.expect(res.timestamp).to.be.a('string'));"
-                            ]
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('Status is ok', () => pm.expect(res.status).to.eql('ok'));",
+                                    "pm.test('Has timestamp', () => pm.expect(res.timestamp).to.be.a('string'));"
+                                ]
+                            }
                         }
-                    }],
+                    ],
                     "request": {
                         "method": "GET",
                         "url": "{{baseUrl}}/health"

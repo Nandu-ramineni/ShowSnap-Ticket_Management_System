@@ -244,6 +244,7 @@ theatreOwnerSchema.methods.toPublicJSON = function () {
         amenities: this.amenities,
         cancellationPolicy: this.cancellationPolicy,
         accountStatus: this.accountStatus,
+        rejectionReason: this.rejectionReason,
         onboardingStatus: this.onboardingStatus,
         isActive: this.isActive,
         ownedTheatre: this.ownedTheatre,

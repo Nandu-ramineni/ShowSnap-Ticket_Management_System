@@ -103,16 +103,22 @@ export const register = async ({ email, password, name, theatreName,isMultiplex 
 // ─── Step 2 — Login ───────────────────────────────────────────────────────────
 
 export const login = async ({ email, password }, meta = {}) => {
-    const owner = await TheatreOwner.findOne({ email }).select('+password');
+    const owner = await TheatreOwner.findOne({ email })
+        .select('+password +rejectionReason');
 
-    // Timing-safe: always run bcrypt regardless of whether owner was found
-    const DUMMY_HASH = '$2b$12$invalidhashfortimingprotectiononly000000000000000000000';
+    // Timing-safe
+    const DUMMY_HASH =
+        '$2b$12$invalidhashfortimingprotectiononly000000000000000000000';
+
     const passwordMatch = owner
         ? await bcrypt.compare(password, owner.password)
         : (await bcrypt.compare(password, DUMMY_HASH), false);
 
-    if (!owner || !passwordMatch) throw ApiError.unauthorized('Invalid credentials');
+    if (!owner || !passwordMatch) {
+        throw ApiError.unauthorized('Invalid credentials');
+    }
 
+    // Pending account
     if (owner.accountStatus === ACCOUNT_STATUS.PENDING) {
         return {
             pending: true,
@@ -120,16 +126,30 @@ export const login = async ({ email, password }, meta = {}) => {
         };
     }
 
-    if (owner.accountStatus === ACCOUNT_STATUS.REJECTED)
-        throw ApiError.forbidden('Your account application was rejected. Please contact support.');
+    // Rejected account
+    if (owner.accountStatus === ACCOUNT_STATUS.REJECTED) {
+        return {
+            rejected: true,
+            owner: owner.toPublicJSON(),
+        };
+    }
 
-    if (!owner.isActive)
-        throw ApiError.forbidden('Account has been suspended. Please contact support.');
+    // Suspended account
+    if (!owner.isActive) {
+        throw ApiError.forbidden(
+            'Account has been suspended. Please contact support.'
+        );
+    }
 
+    // Successful login
     return {
         owner: owner.toPublicJSON(),
         accessToken: signAccessToken(owner),
-        refreshToken: await issueRefreshToken(owner._id, meta.userAgent, meta.ip),
+        refreshToken: await issueRefreshToken(
+            owner._id,
+            meta.userAgent,
+            meta.ip
+        ),
     };
 };
 

@@ -59,6 +59,17 @@ export const login = asyncHandler(async (req, res) => {
         });
     }
 
+    // ── Rejected account ─────────────────────────────
+    if (data?.rejected) {
+        return res.status(403).json({
+            success: false,
+            rejected: true,
+            message:
+                'Your account has been rejected. Please contact support for more information.',
+            owner: data.owner, // Include rejectionReason in the response
+        });
+    }
+
     // ── Normal successful login ─────────────────────
     sendSuccess(res, data, 'Login successful');
 });
@@ -128,3 +139,4 @@ export const changePassword = asyncHandler(async (req, res) => {
     await ownerService.changePassword(req.user.id, currentPassword, newPassword);
     sendSuccess(res, null, 'Password changed successfully');
 });
+

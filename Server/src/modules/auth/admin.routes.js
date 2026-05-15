@@ -1,21 +1,22 @@
 import { Router } from 'express';
 import { body, param, query } from 'express-validator';
-// FIX: was importing authorize from '../../middlewares/authorize.middleware.js'
-//      — that file doesn't exist. authorize is already exported from auth.middleware.js.
 import { authenticate, authorize } from '../../middlewares/auth.middleware.js';
-// FIX: was importing validate from '../../middlewares/validate.middleware.js'
-//      — that file doesn't exist. validate lives in utils/validate.js.
 import { validate } from '../../utils/validate.js';
 import { ROLES, ACCOUNT_STATUS } from '../../utils/constants.js';
-import * as adminService from './admin.service.js';
-
-const asyncHandler = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
+import {
+    getPendingApprovals,
+    approveTheatreOwner,
+    rejectTheatreOwner,
+    getAllOwners,
+    suspendUser,
+    reactivateUser,
+} from './admin.controller.js';
 
 const adminGuard = [authenticate, authorize(ROLES.ADMIN)];
 
 const router = Router();
 
-// ─── Approval queue ───────────────────────────────────────────────────────────
+// ─── Approval Queue ───────────────────────────────────────────────────────────
 
 /**
  * @swagger
@@ -48,13 +49,7 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
     ],
     validate,
-    asyncHandler(async (req, res) => {
-        const data = await adminService.getPendingApprovals({
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 20,
-        });
-        res.json({ success: true, data });
-    })
+    getPendingApprovals,
 );
 
 /**
@@ -87,15 +82,12 @@ router.patch(
     adminGuard,
     [param('userId').isMongoId().withMessage('Invalid user ID')],
     validate,
-    asyncHandler(async (req, res) => {
-        const user = await adminService.approveOwner(req.params.userId);
-        res.json({ success: true, data: { user }, message: 'Account approved' });
-    })
+    approveTheatreOwner,
 );
 
 /**
  * @swagger
- * /admin/approvals/{userId}/reject:
+ * /admin/approvals/{ownerId}/reject:
  *   patch:
  *     summary: Reject a theatre owner's account
  *     tags: [Admin]
@@ -103,7 +95,7 @@ router.patch(
  *       - BearerAuth: []
  *     parameters:
  *       - in: path
- *         name: userId
+ *         name: ownerId
  *         required: true
  *         schema: { type: string }
  *     requestBody:
@@ -130,23 +122,20 @@ router.patch(
  *         description: Already reviewed
  */
 router.patch(
-    '/approvals/:userId/reject',
+    '/approvals/:ownerId/reject',
     adminGuard,
     [
-        param('userId').isMongoId().withMessage('Invalid user ID'),
+        param('ownerId').isMongoId().withMessage('Invalid owner ID'),
         body('reason')
             .trim()
             .notEmpty().withMessage('Rejection reason is required')
             .isLength({ max: 500 }).withMessage('Reason must be 500 characters or fewer'),
     ],
     validate,
-    asyncHandler(async (req, res) => {
-        const user = await adminService.rejectOwner(req.params.userId, req.body.reason);
-        res.json({ success: true, data: { user }, message: 'Account rejected' });
-    })
+    rejectTheatreOwner,
 );
 
-// ─── Owner management ─────────────────────────────────────────────────────────
+// ─── Owner Management ─────────────────────────────────────────────────────────
 
 /**
  * @swagger
@@ -187,15 +176,10 @@ router.get(
         query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('limit must be 1–100'),
     ],
     validate,
-    asyncHandler(async (req, res) => {
-        const data = await adminService.getAllOwners({
-            page: parseInt(req.query.page) || 1,
-            limit: parseInt(req.query.limit) || 20,
-            status: req.query.status,
-        });
-        res.json({ success: true, data });
-    })
+    getAllOwners,
 );
+
+// ─── User Lifecycle ───────────────────────────────────────────────────────────
 
 /**
  * @swagger
@@ -225,10 +209,7 @@ router.patch(
     adminGuard,
     [param('userId').isMongoId().withMessage('Invalid user ID')],
     validate,
-    asyncHandler(async (req, res) => {
-        const user = await adminService.setActiveStatus(req.params.userId, false);
-        res.json({ success: true, data: { user }, message: 'Account suspended' });
-    })
+    suspendUser,
 );
 
 /**
@@ -259,10 +240,8 @@ router.patch(
     adminGuard,
     [param('userId').isMongoId().withMessage('Invalid user ID')],
     validate,
-    asyncHandler(async (req, res) => {
-        const user = await adminService.setActiveStatus(req.params.userId, true);
-        res.json({ success: true, data: { user }, message: 'Account reactivated' });
-    })
+    reactivateUser,
 );
 
 export default router;
+ 

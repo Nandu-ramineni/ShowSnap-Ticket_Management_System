@@ -1,5 +1,5 @@
 import { customAlphabet } from 'nanoid';
-import theatreOwnerModel from '../modules/auth/theatreOwner.model';
+import theatreOwnerModel from '../modules/auth/theatreOwner.model.js';
 
 
 // Uppercase letters + numbers

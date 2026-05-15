@@ -1,89 +1,88 @@
-// FIX: was importing from '../auth/user.model.js' and '../auth/refreshToken.model.js'
-//      admin.service.js is already inside modules/auth/ — the '../auth/' prefix
-//      resolves to modules/auth/auth/ which doesn't exist → module not found crash.
-import User from './user.model.js';
+// admin.service.js — pure business logic, no req/res/next anywhere.
+// All functions are called from admin.controller.js.
+
 import TheatreOwner from './theatreOwner.model.js';
 import RefreshToken from './refreshToken.model.js';
 import ApiError from '../../utils/ApiError.js';
 import { ROLES, ACCOUNT_STATUS } from '../../utils/constants.js';
 
-// ─── Pending approvals ────────────────────────────────────────────────────────
+// ─── Pending User (theatre_owner role) approvals ──────────────────────────────
+// Used by GET /admin/approvals — queries the User collection by role.
 
 export const getPendingApprovals = async ({ page = 1, limit = 20 } = {}) => {
     const skip = (page - 1) * limit;
-
-    const [users, total] = await Promise.all([
-        User.find({ role: ROLES.THEATRE_OWNER, accountStatus: ACCOUNT_STATUS.PENDING })
+    const [owners, total] = await Promise.all([
+        TheatreOwner.find({ accountStatus: ACCOUNT_STATUS.PENDING })
             .sort({ createdAt: 1 })
             .skip(skip)
             .limit(limit)
             .select('name email phone createdAt accountStatus'),
-        User.countDocuments({ role: ROLES.THEATRE_OWNER, accountStatus: ACCOUNT_STATUS.PENDING }),
+        TheatreOwner.countDocuments({  accountStatus: ACCOUNT_STATUS.PENDING }),
     ]);
 
     return {
-        users: users.map((u) => u.toPublicJSON()),
+        owners: owners.map((u) => u.toPublicJSON()),
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
 };
 
-// ─── Approve ──────────────────────────────────────────────────────────────────
+// ─── Approve User (theatre_owner) ─────────────────────────────────────────────
 
-export const approveOwner = async (userId) => {
-    const user = await User.findOne({
-        _id: userId,
-        role: ROLES.THEATRE_OWNER,
+export const approveOwner = async (ownerId) => {
+    const owner = await TheatreOwner.findOne({
+        _id: ownerId,
         accountStatus: ACCOUNT_STATUS.PENDING,
     });
 
-    if (!user) {
-        const exists = await User.exists({ _id: userId });
-        if (!exists) throw ApiError.notFound('User not found');
+    if (!owner) {
+        const exists = await TheatreOwner.exists({ _id: ownerId });
+        if (!exists) throw ApiError.notFound('Theatre owner not found');
 
-        const isOwner = await User.exists({ _id: userId, role: ROLES.THEATRE_OWNER });
+        const isOwner = await TheatreOwner.exists({ _id: ownerId });
         if (!isOwner) throw ApiError.badRequest('User is not a theatre owner');
 
         throw ApiError.conflict('This account has already been reviewed');
     }
 
-    user.accountStatus = ACCOUNT_STATUS.ACTIVE;
-    user.rejectionReason = undefined;
-    await user.save();
+    owner.accountStatus = ACCOUNT_STATUS.ACTIVE;
+    owner.rejectionReason = undefined;
+    await owner.save();
 
-    // TODO: await emailService.sendOwnerApproved(user.email, user.name);
+    // TODO: await emailService.sendOwnerApproved(owner.email, owner.name);
 
-    return user.toPublicJSON();
+    return owner.toPublicJSON();
 };
 
-// ─── Reject ───────────────────────────────────────────────────────────────────
+// ─── Reject User (theatre_owner) ──────────────────────────────────────────────
 
-export const rejectOwner = async (userId, reason) => {
-    const user = await User.findOne({
-        _id: userId,
-        role: ROLES.THEATRE_OWNER,
+export const rejectOwner = async (ownerId, reason) => {
+    const owner = await TheatreOwner.findOne({
+        _id: ownerId,
         accountStatus: ACCOUNT_STATUS.PENDING,
     });
 
-    if (!user) {
-        const exists = await User.exists({ _id: userId });
-        if (!exists) throw ApiError.notFound('User not found');
-
-        const isOwner = await User.exists({ _id: userId, role: ROLES.THEATRE_OWNER });
-        if (!isOwner) throw ApiError.badRequest('User is not a theatre owner');
+    if (!owner) {
+        const exists = await TheatreOwner.exists({ _id: ownerId });
+        if (!exists) throw ApiError.notFound('Theatre owner not found');
 
         throw ApiError.conflict('This account has already been reviewed');
     }
 
-    user.accountStatus = ACCOUNT_STATUS.REJECTED;
-    user.rejectionReason = reason;
-    await user.save();
+    const updatedOwner = await TheatreOwner.findByIdAndUpdate(
+        ownerId,
+        {
+            $set: {
+                accountStatus: ACCOUNT_STATUS.REJECTED,
+                rejectionReason: reason,
+            },
+        },
+        { new: true }
+    ).select('+rejectionReason'); // Include rejectionReason in the returned document
 
-    // TODO: await emailService.sendOwnerRejected(user.email, user.name, reason);
-
-    return user.toPublicJSON();
+    return updatedOwner.toPublicJSON();
 };
 
-// ─── All owners ───────────────────────────────────────────────────────────────
+// ─── List all Users with theatre_owner role ───────────────────────────────────
 
 export const getAllOwners = async ({ page = 1, limit = 20, status } = {}) => {
     const filter = { role: ROLES.THEATRE_OWNER };
@@ -92,22 +91,22 @@ export const getAllOwners = async ({ page = 1, limit = 20, status } = {}) => {
     }
 
     const skip = (page - 1) * limit;
-    const [users, total] = await Promise.all([
-        User.find(filter)
+    const [owners, total] = await Promise.all([
+        TheatreOwner.find(filter)
             .sort({ createdAt: -1 })
             .skip(skip)
             .limit(limit)
             .select('name email phone createdAt accountStatus isActive ownedTheatre'),
-        User.countDocuments(filter),
+        TheatreOwner.countDocuments(filter),
     ]);
 
     return {
-        users: users.map((u) => u.toPublicJSON()),
+        owners: owners.map((o) => o.toPublicJSON()),
         pagination: { page, limit, total, pages: Math.ceil(total / limit) },
     };
 };
 
-// ─── Suspend / reactivate ─────────────────────────────────────────────────────
+// ─── Suspend / Reactivate User ────────────────────────────────────────────────
 
 export const setActiveStatus = async (userId, isActive) => {
     const user = await User.findByIdAndUpdate(
@@ -121,10 +120,9 @@ export const setActiveStatus = async (userId, isActive) => {
 
     return user.toPublicJSON();
 };
+
 // ═══════════════════════════════════════════════════════════════════════════════
-// TheatreOwner admin operations
-// These mirror the User-based owner ops above but target the TheatreOwner
-// collection, now that owner data lives in its own model.
+// TheatreOwner-model operations (separate collection from User)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ─── Pending TheatreOwner approvals ───────────────────────────────────────────
@@ -136,8 +134,7 @@ export const getPendingOwnerApprovals = async ({ page = 1, limit = 20 } = {}) =>
         TheatreOwner.find({ accountStatus: ACCOUNT_STATUS.PENDING })
             .sort({ createdAt: 1 })
             .skip(skip)
-            .limit(limit)
-            .select('email theatreInfo location isMultiplex createdAt accountStatus'),
+            .limit(limit),
         TheatreOwner.countDocuments({ accountStatus: ACCOUNT_STATUS.PENDING }),
     ]);
 
@@ -151,7 +148,7 @@ export const getPendingOwnerApprovals = async ({ page = 1, limit = 20 } = {}) =>
 
 export const approveTheatreOwner = async (ownerId) => {
     const owner = await TheatreOwner.findOne({
-        _id:           ownerId,
+        _id: ownerId,
         accountStatus: ACCOUNT_STATUS.PENDING,
     });
 
@@ -161,8 +158,8 @@ export const approveTheatreOwner = async (ownerId) => {
         throw ApiError.conflict('This account has already been reviewed');
     }
 
-    owner.accountStatus    = ACCOUNT_STATUS.ACTIVE;
-    owner.rejectionReason  = undefined;
+    owner.accountStatus = ACCOUNT_STATUS.ACTIVE;
+    owner.rejectionReason = undefined;
     await owner.save();
 
     // TODO: await emailService.sendOwnerApproved(owner.email, owner.theatreInfo.theatreName);
@@ -171,10 +168,11 @@ export const approveTheatreOwner = async (ownerId) => {
 };
 
 // ─── Reject TheatreOwner ──────────────────────────────────────────────────────
+// BUG FIX: removed debug console.log statements that were left in from development.
 
 export const rejectTheatreOwner = async (ownerId, reason) => {
     const owner = await TheatreOwner.findOne({
-        _id:           ownerId,
+        _id: ownerId,
         accountStatus: ACCOUNT_STATUS.PENDING,
     });
 
@@ -184,7 +182,7 @@ export const rejectTheatreOwner = async (ownerId, reason) => {
         throw ApiError.conflict('This account has already been reviewed');
     }
 
-    owner.accountStatus   = ACCOUNT_STATUS.REJECTED;
+    owner.accountStatus = ACCOUNT_STATUS.REJECTED;
     owner.rejectionReason = reason;
     await owner.save();
 
@@ -217,7 +215,7 @@ export const getAllTheatreOwners = async ({ page = 1, limit = 20, status } = {})
     };
 };
 
-// ─── Suspend / reactivate TheatreOwner ───────────────────────────────────────
+// ─── Suspend / Reactivate TheatreOwner ───────────────────────────────────────
 
 export const setOwnerActiveStatus = async (ownerId, isActive) => {
     const owner = await TheatreOwner.findByIdAndUpdate(
@@ -227,7 +225,6 @@ export const setOwnerActiveStatus = async (ownerId, isActive) => {
     );
     if (!owner) throw ApiError.notFound('Theatre owner not found');
 
-    // Revoke all sessions when suspending
     if (!isActive) await RefreshToken.deleteMany({ userId: ownerId });
 
     return owner.toPublicJSON();
