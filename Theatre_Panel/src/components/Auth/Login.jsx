@@ -117,6 +117,19 @@ const Login = () => {
             });
             return;
         }
+        
+        // Account rejected/suspended → redirect to rejection page with reason
+        if (result?.isRejected) {
+            navigate('/rejected', {
+                replace: true,
+                state: {
+                    fromLogin: true,
+                    message: result.error,
+                    owner: result.owner,
+                },
+            });
+            return;
+        }
 
         // Other errors are shown via the reduxError useEffect above
     };
@@ -147,7 +160,7 @@ const Login = () => {
                                 role="alert"
                                 className="mb-4 flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2.5 text-sm text-destructive"
                             >
-                                <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                                <AlertCircle size={16} className="mt-0.5 shrink-0" />
                                 <span>{reduxError}</span>
                             </div>
                         )}

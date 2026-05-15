@@ -14,6 +14,7 @@ import Dashboard from './Pages/Dashboard/Dashboard';
 import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
+import RejectedApproval from './components/Auth/RejectedApproval';
 
 function App() {
     const dispatch = useDispatch();
@@ -46,6 +47,7 @@ function App() {
                     if no owner data in state or Redux).
                 */}
                 <Route path="/pending" element={<PendingApproval />} />
+                <Route path="/rejected" element={<RejectedApproval />} />
 
                 {/* ── Protected routes (redirect to /login if not authenticated) ── */}
                 <Route

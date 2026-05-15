@@ -60,6 +60,21 @@ export const login = (email, password) => async (dispatch) => {
             };
         }
 
+        // Check for rejected account
+        if (status === 403 && error.response?.data?.rejected) {
+            dispatch({
+                type: ActionTypes.AUTH_LOGIN_FAILURE,
+                payload: message,
+            });
+
+            return {
+                success: false,
+                isRejected: true,
+                error: message,
+                owner: error.response.data.owner, // Include rejectionReason in the response
+            };
+        }
+
         dispatch({
             type: ActionTypes.AUTH_LOGIN_FAILURE,
             payload: message,
