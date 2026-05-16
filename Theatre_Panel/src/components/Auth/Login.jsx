@@ -98,8 +98,17 @@ const Login = () => {
         setFieldErrors({});
 
         const result = await dispatch(login(formData.email.trim(), formData.password));
-
-        if (result?.success) {
+        if(result?.isPendingOnboarding) {
+            navigate('/onboarding', {
+                replace: true,
+                state: {
+                    fromLogin: true,
+                    message: result.error,
+                    owner: result.owner,
+                },
+            });
+            return;
+        } else if (result?.success){
             toast.success('Welcome back!');
             navigate('/dashboard', { replace: true });
             return;

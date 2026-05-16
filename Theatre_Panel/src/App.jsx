@@ -15,6 +15,7 @@ import AppLayout from './components/layout/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import RejectedApproval from './components/Auth/RejectedApproval';
+import Onboarding from './Pages/Onboarding/Onboarding';
 
 function App() {
     const dispatch = useDispatch();
@@ -48,6 +49,16 @@ function App() {
                 */}
                 <Route path="/pending" element={<PendingApproval />} />
                 <Route path="/rejected" element={<RejectedApproval />} />
+
+                {/* ── Protected onboarding route WITHOUT AppLayout ── */}
+                <Route
+                    path="/onboarding"
+                    element={
+                        <ProtectedRoute>
+                            <Onboarding />
+                        </ProtectedRoute>
+                    }
+                />
 
                 {/* ── Protected routes (redirect to /login if not authenticated) ── */}
                 <Route

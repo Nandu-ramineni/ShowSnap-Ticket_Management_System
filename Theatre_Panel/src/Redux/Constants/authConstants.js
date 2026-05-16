@@ -19,3 +19,8 @@ export const AUTH_TOKEN_REFRESHED = 'AUTH_TOKEN_REFRESHED';
 // ─── Session ──────────────────────────────────────────────────────────────────
 export const AUTH_LOGOUT      = 'AUTH_LOGOUT';
 export const AUTH_CLEAR_ERROR = 'AUTH_CLEAR_ERROR';
+
+// ─── Theatre_Owner Onboarding  ─────────────────────────────────────────────────
+export const OWNER_ONBOARDING_REQUEST = 'OWNER_ONBOARDING_REQUEST';
+export const OWNER_ONBOARDING_SUCCESS = 'OWNER_ONBOARDING_SUCCESS';
+export const OWNER_ONBOARDING_FAILURE = 'OWNER_ONBOARDING_FAILURE';

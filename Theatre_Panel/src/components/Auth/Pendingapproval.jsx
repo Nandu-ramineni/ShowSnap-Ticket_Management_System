@@ -190,7 +190,9 @@ const PendingApproval = () => {
 
                                 <div className="flex-1">
                                     <h1 className="text-base font-semibold text-foreground">
-                                        Hello, {owner.theatreName || 'there'}! Application Under Review
+                                        Hello, {owner?.theatreInfo?.theatreName ||
+                                            owner?.name ||
+                                            'there'}! Your Application is currently under review
                                     </h1>
 
                                     <p className="text-sm text-muted-foreground mt-1">

@@ -4,7 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import Logo from '@/assets/Logo.png';
 import { clientRegister } from '@/redux/Actions/authActions';
 import { toast, Toaster } from 'sonner'; // FIX 2a: import Toaster so toasts actually render
-import { FileText, CheckCircle2 } from 'lucide-react';
+import { FileText, CheckCircle2, ArrowRight, Loader } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,7 +89,7 @@ const PASSWORD_REGEX = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&
 const Signup = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const { isLoading,error } = useSelector((s) => s.auth);
+    const { isLoading} = useSelector((s) => s.auth);
 
     const [step, setStep] = useState(1);
     const [uploading, setUploading] = useState({});
@@ -579,8 +579,8 @@ const Signup = () => {
                                     </Button>
                                 )}
                                 {step === 2 && (
-                                    <Button type="submit" disabled={isLoading}>
-                                        {isLoading ? 'Creating…' : 'Create Account'}
+                                    <Button type="submit" disabled={isLoading} className="ml-auto  w-1/2">
+                                        {isLoading ? <p className='flex justify-center items-center-safe gap-4'>Creating Account <Loader className='animate-spin'/></p> : <p className='flex justify-center items-center-safe gap-4'>Create Account <ArrowRight /></p>}
                                     </Button>
                                 )}
                             </div>

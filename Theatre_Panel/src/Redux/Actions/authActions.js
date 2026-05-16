@@ -31,7 +31,18 @@ export const login = (email, password) => async (dispatch) => {
         // ── Persist owner for hydration across page refreshes ────────────
         // SECURITY: Only store public, non-sensitive owner fields.
         localStorage.setItem('authUser', JSON.stringify(owner));
-
+        // --Check that owner onboarding status pending or completed.
+        if (owner.onboardingStatus === 'pending_onboarding') {
+            dispatch({
+                type: ActionTypes.OWNER_ONBOARDING_REQUEST,
+            })
+            return { success: true, isPendingOnboarding: true };
+        } else if (owner.onboardingStatus === 'completed_onboarding') {
+            dispatch({
+                type: ActionTypes.OWNER_ONBOARDING_SUCCESS,
+            });
+            return { success: true, isPendingOnboarding: false };
+        }
         dispatch({
             type: ActionTypes.AUTH_LOGIN_SUCCESS,
             payload: owner,
@@ -174,3 +185,42 @@ export const hydrateAuth = () => (dispatch) => {
 
 // ─── Clear error banner ───────────────────────────────────────────────────────
 export const clearAuthError = () => ({ type: ActionTypes.AUTH_CLEAR_ERROR });
+
+// ─── Theatre Owner Onboarding ─────────────────────────────────────────────────
+/**
+ * POST /theatre-owner/onboarding
+ * Saves theatre owner onboarding data (theatre info, location, amenities, cancellation policy)
+ * On success: dispatches ONBOARDING_SUCCESS, updates authUser in localStorage
+ * On failure: dispatches ONBOARDING_FAILURE with error message
+ */
+export const saveTheatreOnboarding = (formData) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.OWNER_ONBOARDING_REQUEST });
+
+        const { data } = await api.patch('/theatre-owner/onboarding', formData);
+
+        const { owner, onboardingComplete } = data.data;
+
+        // ── Update localStorage with latest owner data ────────────────────────
+        localStorage.setItem('authUser', JSON.stringify(owner));
+
+        dispatch({
+            type: ActionTypes.OWNER_ONBOARDING_SUCCESS,
+            payload: owner,
+        });
+
+        return { success: true, owner, onboardingComplete };
+
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Onboarding failed. Please try again.';
+
+        dispatch({
+            type: ActionTypes.OWNER_ONBOARDING_FAILURE,
+            payload: message,
+        });
+
+        throw new Error(message);
+    }
+};

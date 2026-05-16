@@ -100,6 +100,25 @@ export const authReducer = (state = initialState, action) => {
                 isHydrating: false, // prevent re-hydration loop after logout
             };
 
+        // ── Theatre Owner Onboarding ────────────────────────────────────────────
+        case ActionTypes.OWNER_ONBOARDING_REQUEST:
+            return { ...state, isLoading: false, error: null };
+
+        case ActionTypes.OWNER_ONBOARDING_SUCCESS:
+            return {
+                ...state,
+                isLoading: false,
+                user: action.payload,
+                error: null,
+            };
+
+        case ActionTypes.OWNER_ONBOARDING_FAILURE:
+            return {
+                ...state,
+                isLoading: false,
+                error: action.payload,
+            };
+
         // ── Misc ──────────────────────────────────────────────────────────────
         case ActionTypes.AUTH_CLEAR_ERROR:
             return { ...state, error: null };
