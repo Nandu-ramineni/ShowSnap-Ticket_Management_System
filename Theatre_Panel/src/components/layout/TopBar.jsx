@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { HugeiconsIcon } from '@hugeicons/react';
-import { PanelLeftIcon, PanelRightIcon } from '@hugeicons/core-free-icons';
+import { PanelLeftIcon, PanelRightIcon, PowerIcon } from '@hugeicons/core-free-icons';
 
 const TopBar = ({
     onMenuClick,
@@ -108,13 +108,18 @@ const TopBar = ({
 
             {/* NOTIFICATIONS */}
             <Link to="/notifications">
-                <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-white">
-                    <Bell className="w-6 h-6" />
-                    <span className="absolute top-0 right-0 w-3 h-3 bg-primary rounded-full text-[8px] flex items-center justify-center font-bold text-white">
+                <button size="icon" className="relative text-muted-foreground hover:text-white">
+                    <Bell className="w-4 h-4" />
+                    <span className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full text-[8px] flex items-center justify-center font-bold text-white">
                         5
                     </span>
-                </Button>
+                </button>
             </Link>
+            
+            {/* Logout */}
+                <button  className="text-muted-foreground hover:text-red-400">
+                    <HugeiconsIcon icon={PowerIcon} size={16} />
+                </button>
         </div>
     );
 };

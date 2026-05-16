@@ -7,6 +7,7 @@ import { hydrateAuth } from '@/Redux/Actions/authActions';
 
 import Login from './components/Auth/Login';
 import Signup from './components/Auth/Signup';
+import ForgotPassword from './Pages/ForgotPassword/ForgotPassword';
 import PrivacyPolicy from './components/Auth/PrivacyAgreementPolicy';
 import PendingApproval from './components/Auth/Pendingapproval';
 
@@ -35,6 +36,7 @@ function App() {
                 <Route element={<PublicRoute />}>
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Signup />} />
+                    <Route path="/forgot-password" element={<ForgotPassword />} />
                 </Route>
 
                 {/* ── Semi-public: accessible to everyone (no auth check needed) ── */}

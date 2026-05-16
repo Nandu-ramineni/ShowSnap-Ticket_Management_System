@@ -224,3 +224,90 @@ export const saveTheatreOnboarding = (formData) => async (dispatch) => {
         throw new Error(message);
     }
 };
+
+// ─── Password Reset: Step 1 - Request OTP ─────────────────────────────────────
+
+export const requestPasswordReset = (email) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.AUTH_LOGIN_REQUEST });
+
+        const { data } = await api.post('/theatre-owner/forgot-password', { email });
+
+        dispatch({ type: ActionTypes.AUTH_CLEAR_ERROR });
+        return { success: true, message: data.data.message };
+
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Failed to send OTP. Please try again.';
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGIN_FAILURE,
+            payload: message,
+        });
+
+        throw new Error(message);
+    }
+};
+
+// ─── Password Reset: Step 2 - Verify OTP & Get Token ──────────────────────────
+
+export const verifyOTPAndGenerateToken = (email, otp) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.AUTH_LOGIN_REQUEST });
+
+        const { data } = await api.post('/theatre-owner/verify-otp', { email, otp });
+
+        dispatch({ type: ActionTypes.AUTH_CLEAR_ERROR });
+        return { success: true, message: data.data.message };
+
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Invalid OTP. Please try again.';
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGIN_FAILURE,
+            payload: message,
+        });
+
+        throw new Error(message);
+    }
+};
+
+// ─── Password Reset: Step 3 - Reset Password ──────────────────────────────────
+
+export const resetPassword = (email, resetToken, newPassword) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.AUTH_LOGIN_REQUEST });
+
+        const { data } = await api.post('/theatre-owner/reset-password', {
+            email,
+            resetToken,
+            newPassword,
+        });
+
+        // Clear auth state as user needs to login again
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+        localStorage.removeItem('authUser');
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGOUT,
+        });
+
+        return { success: true, message: data.data.message };
+
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Failed to reset password. Please try again.';
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGIN_FAILURE,
+            payload: message,
+        });
+
+        throw new Error(message);
+    }
+};
