@@ -74,6 +74,7 @@ export const rejectOwner = async (ownerId, reason) => {
             $set: {
                 accountStatus: ACCOUNT_STATUS.REJECTED,
                 rejectionReason: reason,
+                isActive: false, // Ensure rejected accounts are inactive
             },
         },
         { new: true }
