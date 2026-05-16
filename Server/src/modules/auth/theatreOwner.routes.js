@@ -533,6 +533,122 @@ router.patch(
 );
 
 // ════════════════════════════════════════════════════════════════════════════════
+// PASSWORD RESET FLOW
+// ════════════════════════════════════════════════════════════════════════════════
+
+/**
+ * @swagger
+ * /theatre-owner/forgot-password:
+ *   post:
+ *     summary: Request password reset (Step 1 - Send OTP)
+ *     description: |
+ *       Initiates password reset flow. Sends a 6-digit OTP to registered email.
+ *       OTP is valid for 10 minutes.
+ *     tags: [TheatreOwner — Auth]
+ *     x-rateLimit: authLimiter
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: priya@inoxcinemas.com
+ *     responses:
+ *       200:
+ *         description: OTP sent to email
+ *       404:
+ *         description: Email not found
+ */
+router.post(
+    '/forgot-password',
+    authLimiter,
+    [v.email],
+    validate,
+    ownerController.requestPasswordReset,
+);
+
+/**
+ * @swagger
+ * /theatre-owner/verify-otp:
+ *   post:
+ *     summary: Verify OTP and generate reset token (Step 2)
+ *     description: |
+ *       Verifies the OTP and generates a password reset token.
+ *       Reset token is sent via email and valid for 15 minutes.
+ *     tags: [TheatreOwner — Auth]
+ *     x-rateLimit: authLimiter
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, otp]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               otp:
+ *                 type: string
+ *                 example: "123456"
+ *     responses:
+ *       200:
+ *         description: OTP verified, reset link sent to email
+ *       400:
+ *         description: Invalid or expired OTP
+ */
+router.post(
+    '/verify-otp',
+    authLimiter,
+    [v.email, body('otp').notEmpty().withMessage('OTP is required')],
+    validate,
+    ownerController.verifyOTPAndGenerateToken,
+);
+
+/**
+ * @swagger
+ * /theatre-owner/reset-password:
+ *   post:
+ *     summary: Reset password (Step 3)
+ *     description: |
+ *       Completes password reset using the reset token from email.
+ *       All refresh tokens are revoked after reset.
+ *     tags: [TheatreOwner — Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email, resetToken, newPassword]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               resetToken:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *     responses:
+ *       200:
+ *         description: Password reset successful
+ *       400:
+ *         description: Invalid or expired token
+ */
+router.post(
+    '/reset-password',
+    [v.email, body('resetToken').notEmpty().withMessage('Reset token is required'), v.newPassword],
+    validate,
+    ownerController.resetPassword,
+);
+
+// ════════════════════════════════════════════════════════════════════════════════
 // STEP 3 — ONBOARDING
 // ════════════════════════════════════════════════════════════════════════════════
 

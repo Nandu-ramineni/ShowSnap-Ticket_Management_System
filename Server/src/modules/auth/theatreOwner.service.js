@@ -9,6 +9,8 @@ import ApiError from '../../utils/ApiError.js';
 import env from '../../config/env.js';
 import { ACCOUNT_STATUS, ONBOARDING_STATUS } from '../../utils/constants.js';
 import { generateApplicationId } from '../../utils/generateApplicationId.js';
+import { sendOTPEmail, sendPasswordResetEmail } from '../../utils/nodeMailer.js';
+import logger from '../../utils/logger.js';
 
 const SALT_ROUNDS = 12;
 const TOKEN_OPTIONS = { issuer: env.jwt.issuer, audience: env.jwt.audience };
@@ -388,4 +390,136 @@ export const changePassword = async (ownerId, currentPassword, newPassword) => {
 
     // Revoke all sessions — force re-login everywhere
     await RefreshToken.deleteMany({ userId: ownerId });
+};
+
+// ─── Password Reset: Step 1 - Request OTP ───────────────────────────────────────
+
+const generateOTP = () => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+export const requestPasswordReset = async (email) => {
+    const owner = await TheatreOwner.findOne({ email });
+    if (!owner) throw ApiError.notFound('Theatre owner not found with this email');
+
+    // Generate 6-digit OTP
+    const otp = generateOTP();
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Save OTP to database
+    owner.resetPassword = owner.resetPassword || {};
+    owner.resetPassword.passwordResetOTP = otp;
+    owner.resetPassword.passwordResetOTPExpires = otpExpiry;
+    await owner.save();
+
+    // Send OTP via email
+    try {
+        await sendOTPEmail(owner.email, owner.name, otp);
+        logger.info(`OTP sent to ${owner.email}`);
+    } catch (error) {
+        logger.error(`Failed to send OTP email: ${error.message}`);
+        throw ApiError.internal('Failed to send OTP. Please try again later.');
+    }
+
+    return {
+        message: 'OTP sent to your registered email',
+        email: owner.email,
+    };
+};
+
+// ─── Password Reset: Step 2 - Verify OTP & Generate Token ────────────────────────
+
+export const verifyOTPAndGenerateToken = async (email, otp) => {
+    const owner = await TheatreOwner.findOne({ email })
+        .select('+resetPassword.passwordResetOTP +resetPassword.passwordResetOTPExpires');
+
+    if (!owner) throw ApiError.notFound('Theatre owner not found');
+
+    const storedOTP = owner.resetPassword?.passwordResetOTP;
+    const otpExpiry = owner.resetPassword?.passwordResetOTPExpires;
+
+    // Verify OTP exists and not expired
+    if (!storedOTP || !otpExpiry) {
+        throw ApiError.badRequest('No OTP request found. Please request a new OTP.');
+    }
+
+    if (new Date() > otpExpiry) {
+        throw ApiError.badRequest('OTP has expired. Please request a new one.');
+    }
+
+    if (otp !== storedOTP) {
+        throw ApiError.unauthorized('Invalid OTP. Please try again.');
+    }
+
+    // Generate password reset token (valid for 15 minutes)
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+    const tokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+    // Save token and clear OTP
+    owner.resetPassword.passwordResetToken = tokenHash;
+    owner.resetPassword.passwordResetTokenExpires = tokenExpiry;
+    owner.resetPassword.passwordResetOTP = undefined;
+    owner.resetPassword.passwordResetOTPExpires = undefined;
+    await owner.save();
+
+    // Send password reset email with token
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}&email=${email}`;
+    try {
+        await sendPasswordResetEmail(owner.email, owner.name, resetLink);
+        logger.info(`Password reset email sent to ${owner.email}`);
+    } catch (error) {
+        logger.error(`Failed to send reset email: ${error.message}`);
+        throw ApiError.internal('Failed to send reset email. Please try again later.');
+    }
+
+    return {
+        message: 'OTP verified. Password reset email sent to your email.',
+        email: owner.email,
+    };
+};
+
+// ─── Password Reset: Step 3 - Reset Password ──────────────────────────────────
+
+export const resetPassword = async (email, resetToken, newPassword) => {
+    const tokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
+
+    const owner = await TheatreOwner.findOne({ email })
+        .select('+resetPassword.passwordResetToken +resetPassword.passwordResetTokenExpires +password');
+
+    if (!owner) throw ApiError.notFound('Theatre owner not found');
+
+    const storedTokenHash = owner.resetPassword?.passwordResetToken;
+    const tokenExpiry = owner.resetPassword?.passwordResetTokenExpires;
+
+    // Verify token exists and not expired
+    if (!storedTokenHash || !tokenExpiry) {
+        throw ApiError.badRequest('Password reset token not found or expired.');
+    }
+
+    if (new Date() > tokenExpiry) {
+        throw ApiError.badRequest('Password reset token has expired. Please request a new one.');
+    }
+
+    // Verify token hash matches
+    if (tokenHash !== storedTokenHash) {
+        throw ApiError.unauthorized('Invalid reset token.');
+    }
+
+    // Hash new password and update
+    const hashedPassword = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    owner.password = hashedPassword;
+    owner.resetPassword.passwordResetToken = undefined;
+    owner.resetPassword.passwordResetTokenExpires = undefined;
+    await owner.save();
+
+    // Revoke all sessions — force re-login
+    await RefreshToken.deleteMany({ userId: owner._id });
+
+    logger.info(`Password reset successful for ${owner.email}`);
+
+    return {
+        success: true,
+        message: 'Password reset successful. Please login with your new password.',
+    };
 };

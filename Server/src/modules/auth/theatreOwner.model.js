@@ -104,6 +104,47 @@ const cancellationPolicySchema = new mongoose.Schema(
     { _id: false }
 );
 
+const resetPasswordSchema = new mongoose.Schema({
+    passwordResetToken: {
+        type: String,
+        select: false
+    },
+    passwordResetTokenExpires: {
+        type: Date,
+        select: false
+    },
+    passwordResetOTP: {
+        type: String,
+        select: false
+    },
+    passwordResetOTPExpires: {
+        type: Date,
+        select: false
+    }
+}, { _id: false })
+
+const tractionSchema = new mongoose.Schema({
+    lastLogin: {
+        type: Date
+    },
+    loginCounts: {
+        type: Number,
+        default: 0
+    },
+    ipAddresses: {
+        type: [String]
+    },
+    lastLocation: {
+        city: String,
+        region: String,
+        country: String
+    },
+    activeLogins: {
+        type: Number,
+        default: 0
+    }
+}, { _id: false })
+
 // ─── Main schema ──────────────────────────────────────────────────────────────
 
 const theatreOwnerSchema = new mongoose.Schema(
@@ -177,9 +218,18 @@ const theatreOwnerSchema = new mongoose.Schema(
         // ── Link to Theatre document (created after onboarding completes) ─────────
         ownedTheatre: { type: mongoose.Schema.Types.ObjectId, ref: 'Theatre' },
 
-        // ── Password reset ────────────────────────────────────────────────────────
-        resetPasswordTokenHash: { type: String, select: false },
-        resetPasswordExpires: { type: Date, select: false },
+        // password reset flow
+        resetPassword: {
+            type: resetPasswordSchema,
+            default: () => ({}) 
+        },
+
+        //traction flow
+        traction: {
+            type: tractionSchema,
+            default: () => ({}) 
+        }
+
     },
     { timestamps: true, versionKey: false }
 );
@@ -189,7 +239,7 @@ const theatreOwnerSchema = new mongoose.Schema(
 // Admin dashboard: filter by status + sort by createdAt
 theatreOwnerSchema.index({ accountStatus: 1, createdAt: 1 });
 theatreOwnerSchema.index({ onboardingStatus: 1 });
-theatreOwnerSchema.index({ resetPasswordTokenHash: 1 }, { sparse: true });
+theatreOwnerSchema.index({ 'resetPassword.passwordResetToken': 1 }, { sparse: true });
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 

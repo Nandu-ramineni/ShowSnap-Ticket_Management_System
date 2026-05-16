@@ -140,3 +140,23 @@ export const changePassword = asyncHandler(async (req, res) => {
     sendSuccess(res, null, 'Password changed successfully');
 });
 
+// ─── Password Reset Flow ──────────────────────────────────────────────────────
+
+export const requestPasswordReset = asyncHandler(async (req, res) => {
+    const { email } = req.body;
+    const result = await ownerService.requestPasswordReset(email);
+    sendSuccess(res, result, 'OTP sent to your email');
+});
+
+export const verifyOTPAndGenerateToken = asyncHandler(async (req, res) => {
+    const { email, otp } = req.body;
+    const result = await ownerService.verifyOTPAndGenerateToken(email, otp);
+    sendSuccess(res, result, 'OTP verified. Check your email for reset link.');
+});
+
+export const resetPassword = asyncHandler(async (req, res) => {
+    const { email, resetToken, newPassword } = req.body;
+    const result = await ownerService.resetPassword(email, resetToken, newPassword);
+    sendSuccess(res, result, 'Password reset successful');
+});
+
