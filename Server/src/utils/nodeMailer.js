@@ -3,7 +3,10 @@ import env from '../config/env.js';
 import logger from './logger.js';
 
 const transporter = nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false, // true only for 465
+    family: 4, // FORCE IPv4
     auth: {
         user: env.smtp.user,
         pass: env.smtp.pass,
