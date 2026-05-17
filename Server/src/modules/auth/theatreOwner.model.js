@@ -125,7 +125,8 @@ const resetPasswordSchema = new mongoose.Schema({
 
 const tractionSchema = new mongoose.Schema({
     lastLogin: {
-        type: Date
+        type: Date,
+        
     },
     loginCounts: {
         type: Number,
@@ -298,6 +299,13 @@ theatreOwnerSchema.methods.toPublicJSON = function () {
         onboardingStatus: this.onboardingStatus,
         isActive: this.isActive,
         ownedTheatre: this.ownedTheatre,
+        // Traction — exposed for owner security awareness (ip addresses hidden)
+        traction: {
+            lastLogin: this.traction?.lastLogin,
+            loginCounts: this.traction?.loginCounts || 0,
+            lastLocation: this.traction?.lastLocation,
+            activeLogins: this.traction?.activeLogins || 0,
+        },
         createdAt: this.createdAt,
         updatedAt: this.updatedAt,
     };

@@ -5,6 +5,7 @@ import TheatreOwner from './theatreOwner.model.js';
 import RefreshToken from './refreshToken.model.js';
 import ApiError from '../../utils/ApiError.js';
 import { ROLES, ACCOUNT_STATUS } from '../../utils/constants.js';
+import { sendOwnerApproved, sendOwnerRejection } from '../../utils/nodeMailer.js';
 
 // ─── Pending User (theatre_owner role) approvals ──────────────────────────────
 // Used by GET /admin/approvals — queries the User collection by role.
@@ -48,6 +49,8 @@ export const approveOwner = async (ownerId) => {
     owner.rejectionReason = undefined;
     await owner.save();
 
+    await sendOwnerApproved(owner.email, owner.theatreInfo.theatreName);
+
     // TODO: await emailService.sendOwnerApproved(owner.email, owner.name);
 
     return owner.toPublicJSON();
@@ -79,6 +82,8 @@ export const rejectOwner = async (ownerId, reason) => {
         },
         { new: true }
     ).select('+rejectionReason'); // Include rejectionReason in the returned document
+
+    await sendOwnerRejection(updatedOwner.email, updatedOwner.theatreInfo.theatreName, reason);
 
     return updatedOwner.toPublicJSON();
 };

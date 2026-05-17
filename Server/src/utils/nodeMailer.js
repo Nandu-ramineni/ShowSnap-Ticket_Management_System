@@ -65,6 +65,45 @@ const getResetTokenEmailTemplate = (ownerName, resetLink) => `
     </div>
 `;
 
+const sendOwnerApprovalEmailTemplate = (ownerName,email) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">CineVault</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0;">Owner Approval</p>
+        </div>
+        <div style="padding: 30px; background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 0 0 8px 8px;">
+            <p>Hello <strong>${ownerName}</strong>,</p>
+            <p>Your account has been <strong>approved</strong>. You can now log in to your account.</p>
+            <p style="color: #666; font-size: 14px;">
+                If you didn't request this, please ignore this email.
+            </p>
+            <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+                This is an automated message. Please don't reply to this email.
+            </p>
+        </div>
+    </div>
+`;
+
+const sendOwnerRejectionEmailTemplate = (ownerName,email,reason) => `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
+            <h1 style="color: white; margin: 0;">CineVault</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0;">Owner Rejection</p>
+        </div>
+        <div style="padding: 30px; background: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 0 0 8px 8px;">
+            <p>Hello <strong>${ownerName}</strong>,</p>
+            <p>We regret to inform you that your account has been <strong>rejected</strong>.</p>
+            <p><strong>Reason:</strong> ${reason}</p>
+            <p style="color: #666; font-size: 14px;">
+                If you have any questions, please contact our support team.
+            </p>
+            <p style="color: #999; font-size: 12px; margin-top: 30px; border-top: 1px solid #ddd; padding-top: 20px;">
+                This is an automated message. Please don't reply to this email.
+            </p>
+        </div>
+    </div>
+`;
+
 // ─── Send OTP Email ────────────────────────────────────────────────────────────
 export const sendOTPEmail = async (recipientEmail, ownerName, otp) => {
     try {
@@ -102,6 +141,42 @@ export const sendPasswordResetEmail = async (recipientEmail, ownerName, resetLin
         throw error;
     }
 };
+
+export const sendOwnerApproved = async (email, ownerName) => {
+    try {
+        const mailOptions = {
+            from: env.smtp.from,
+            to: email,
+            subject: 'Your Account Has Been Approved - CineVault',
+            html: sendOwnerApprovalEmailTemplate(ownerName, email),
+        };
+
+        await transporter.sendMail(mailOptions);
+        logger.info(`Owner approval email sent to ${email}`);
+        return { success: true };
+    } catch (error) {
+        logger.error(`Failed to send owner approval email: ${error.message}`);
+        throw error;
+    }
+}
+
+export const sendOwnerRejection = async (email, ownerName, reason) => {
+    try {
+        const mailOptions = {
+            from: env.smtp.from,
+            to: email,
+            subject: 'Your Account Has Been Rejected - CineVault',
+            html: sendOwnerRejectionEmailTemplate(ownerName, email, reason),
+        };
+
+        await transporter.sendMail(mailOptions);
+        logger.info(`Owner rejection email sent to ${email}`);
+        return { success: true };
+    } catch (error) {
+        logger.error(`Failed to send owner rejection email: ${error.message}`);
+        throw error;    
+        }
+    }
 
 // ─── Generic Email Sender ──────────────────────────────────────────────────────
 export const sendMail = async (to, subject, html) => {

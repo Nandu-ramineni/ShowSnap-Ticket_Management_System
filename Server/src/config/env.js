@@ -28,7 +28,7 @@ export default {
   IS_PRODUCTION: process.env.NODE_ENV === 'production',
 
   ALLOWED_ORIGINS:
-    process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:3000'],
+    process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173'],
 
   mongo: {
     uri: process.env.MONGO_URI,
@@ -77,6 +77,6 @@ export default {
     port: parseInt(process.env.SMTP_PORT, 10) || 587,
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
-    from: process.env.FROM_EMAIL || 'noreply@seatsecure.com',
+    from: 'noreply@seatsecure.com',
   },
 };

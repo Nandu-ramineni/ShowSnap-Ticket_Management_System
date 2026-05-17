@@ -5,10 +5,30 @@ import { SUPPORTED_DOC_TYPES } from './theatreOwner.model.js';
 const asyncHandler = (fn) => (req, res, next) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
-const getMeta = (req) => ({
-    ip: req.headers['x-forwarded-for']?.split(',')[0].trim() ?? req.socket.remoteAddress,
-    userAgent: req.headers['user-agent'] ?? 'unknown',
-});
+const getMeta = (req) => {
+    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() ?? req.socket.remoteAddress;
+    let location = null;
+
+    try {
+        const geoip = require('geoip-lite');
+        const geo = geoip.lookup(ip);
+        if (geo) {
+            location = {
+                city: geo.city || null,
+                region: geo.timezone?.split('/')[1] || null,
+                country: geo.country || null,
+            };
+        }
+    } catch (error) {
+        // geoip-lite not installed or lookup failed, location remains null
+    }
+
+    return {
+        ip,
+        userAgent: req.headers['user-agent'] ?? 'unknown',
+        location,
+    };
+};
 
 // ─── Step 1: Registration ─────────────────────────────────────────────────────
 // Accepts multipart/form-data with:

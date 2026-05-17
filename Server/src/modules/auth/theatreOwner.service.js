@@ -143,6 +143,47 @@ export const login = async ({ email, password }, meta = {}) => {
         );
     }
 
+    // Deactivated account
+    if (owner.accountStatus === ACCOUNT_STATUS.DEACTIVATED) {
+        throw ApiError.forbidden(
+            'Account has been deactivated. Please contact support.'
+        );
+    }
+
+    //traction
+    const ip = meta.ip;
+    const userAgent = meta.userAgent;
+    if (!owner.traction) {
+        owner.traction = {};
+    }
+    owner.traction.lastLogin = new Date();
+
+    owner.traction.loginCounts = (owner.traction.loginCounts || 0) + 1;
+
+    if (ip) {
+        owner.traction.ipAddresses = [
+            ...(owner.traction.ipAddresses || []),
+            ip,
+        ].slice(-10); // keep last 10 IPs
+    }
+    if (meta.location) {
+        owner.traction.lastLocation = {
+            city: meta.location.city,
+            region: meta.location.region,
+            country: meta.location.country,
+        };
+    }
+
+    // activeLogins = count of active (non-expired, non-deleted) refresh tokens + new token
+    const activeTokenCount = await RefreshToken.countDocuments({
+        userId: owner._id,
+        expiresAt: { $gt: new Date() },
+        usedAt: null,
+    });
+    owner.traction.activeLogins = activeTokenCount + 1;
+
+    await owner.save();
+
     // Successful login
     return {
         owner: owner.toPublicJSON(),
@@ -204,7 +245,7 @@ export const logoutAll = async (ownerId) => {
 // ─── Get profile ──────────────────────────────────────────────────────────────
 
 export const getProfile = async (ownerId) => {
-    const owner = await TheatreOwner.findById(ownerId);
+    const owner = await TheatreOwner.findById(ownerId).select('+traction');
     if (!owner) throw ApiError.notFound('Theatre owner not found');
     return owner.toPublicJSON();
 };
