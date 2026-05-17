@@ -52,7 +52,7 @@ const Dashboard = () => {
   return (
     <div className="p-4 lg:p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Welcome back, {user?.name ?? 'User'} 👋</h1>
+        <h1 className="text-2xl font-bold text-white">Welcome back, {user?.theatreInfo?.theatreName ?? 'User'} 👋</h1>
         <p className="text-sm text-muted-foreground mt-1">Here{"'"}s what{"'"}s happening with your theatre today.</p>
       </div>
 

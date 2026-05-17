@@ -50,8 +50,8 @@ export default function Sidebar({ isOpen, onClose }) {
     };
 
     // Derive initials from logged-in user's name
-    const initials = user?.name
-        ? user.name.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+    const initials = user?.theatreInfo?.theatreName
+        ? user?.theatreInfo?.theatreName.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
         : 'U';
 
     const roleName = user?.role
@@ -138,14 +138,14 @@ export default function Sidebar({ isOpen, onClose }) {
 
                 {/* ── User footer ───────────────────────────────────────── */}
                 <div className="px-4 py-4 border-t border-white/5">
-                    <div className="flex items-center gap-3 px-3 py-2">
+                    <div className="flex items-center gap-3 px-3 ">
                         {/* Avatar */}
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-brand to-orange-500 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-linear-to-br from-brand to-primary flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
                             {initials}
                         </div>
                         {/* Name + role */}
                         <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">{user?.name ?? 'User'}</p>
+                            <p className="text-sm font-medium text-white truncate">{user?.theatreInfo?.theatreName ?? 'User'}</p>
                             <p className="text-xs text-muted-foreground truncate">{roleName}</p>
                         </div>
                         {/* Logout icon button */}

@@ -17,6 +17,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 import PublicRoute from './components/PublicRoute';
 import RejectedApproval from './components/Auth/RejectedApproval';
 import Onboarding from './Pages/Onboarding/Onboarding';
+import TheatreProfile from './Pages/TheatreProfile/TheatreProfile';
+import ResetPassword from './Pages/ForgotPassword/ResetPassword';
 
 function App() {
     const dispatch = useDispatch();
@@ -37,6 +39,7 @@ function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Signup />} />
                     <Route path="/forgot-password" element={<ForgotPassword />} />
+                    <Route path="/reset-password" element={<ResetPassword />}/>
                 </Route>
 
                 {/* ── Semi-public: accessible to everyone (no auth check needed) ── */}
@@ -71,7 +74,7 @@ function App() {
                     }
                 >
                     <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/theatre" element={<Placeholder title="Theatre Profile" />} />
+                    <Route path="/theatre" element={<TheatreProfile />} />
                     <Route path="/screens" element={<Placeholder title="Screen Manager" />} />
                     <Route path="/shows" element={<Placeholder title="Show Scheduler" />} />
                     <Route path="/seatmap" element={<Placeholder title="Live Seat Map" />} />
