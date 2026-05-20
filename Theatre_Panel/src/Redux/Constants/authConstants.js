@@ -17,6 +17,7 @@ export const AUTH_HYDRATE_FAILURE = 'AUTH_HYDRATE_FAILURE';
 export const AUTH_TOKEN_REFRESHED = 'AUTH_TOKEN_REFRESHED';
 
 // ─── Session ──────────────────────────────────────────────────────────────────
+export const AUTH_LOGOUT_REQUEST = 'AUTH_LOGOUT_REQUEST';
 export const AUTH_LOGOUT      = 'AUTH_LOGOUT';
 export const AUTH_CLEAR_ERROR = 'AUTH_CLEAR_ERROR';
 

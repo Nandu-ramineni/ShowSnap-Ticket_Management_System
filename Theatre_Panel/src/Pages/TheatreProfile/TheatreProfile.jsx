@@ -52,7 +52,7 @@ const TheatreProfile = () => {
     } = owner;
 
     const activeAmenities = Object.entries(amenities)
-        .filter(([_, isActive]) => isActive)
+        .filter(([amenity, isActive]) => isActive)
         .map(([key]) => key);
 
     return (
@@ -75,7 +75,7 @@ const TheatreProfile = () => {
                 {isEditMode && (
                     <div className="my-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                         <p className="text-blue-800">
-                            💡 Edit mode is coming soon! You'll be able to update your theatre information here.
+                            💡 Edit mode is coming soon! You{"'"}ll be able to update your theatre information here.
                         </p>
                     </div>
                 )}

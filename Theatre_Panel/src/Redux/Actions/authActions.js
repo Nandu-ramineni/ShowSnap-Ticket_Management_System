@@ -148,11 +148,39 @@ export const clientRegister = (payload) => async (dispatch) => {
  * Clears cookies, localStorage, and resets Redux state.
  * Optionally call the server-side logout endpoint if one exists.
  */
-export const logout = () => (dispatch) => {
-    Cookies.remove('accessToken');
-    Cookies.remove('refreshToken');
-    localStorage.removeItem('authClient');
-    dispatch({ type: ActionTypes.AUTH_LOGOUT });
+export const logout = () => async (dispatch) => {
+    try {
+        dispatch({
+            type: ActionTypes.AUTH_LOGOUT_REQUEST,
+        });
+
+        const refreshToken =
+            Cookies.get('refreshToken');
+
+        if (refreshToken) {
+            await api.post('/theatre-owner/logout', {
+                refreshToken,
+            });
+        }
+
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+
+        localStorage.removeItem('authUser');
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGOUT,
+        });
+    } catch (error) {
+        Cookies.remove('accessToken');
+        Cookies.remove('refreshToken');
+
+        localStorage.removeItem('authUser');
+
+        dispatch({
+            type: ActionTypes.AUTH_LOGOUT,
+        });
+    }
 };
 
 // ─── Hydrate session on page refresh ─────────────────────────────────────────
