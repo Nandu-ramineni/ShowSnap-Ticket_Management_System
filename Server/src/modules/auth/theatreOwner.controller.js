@@ -5,30 +5,10 @@ import { SUPPORTED_DOC_TYPES } from './theatreOwner.model.js';
 const asyncHandler = (fn) => (req, res, next) =>
     Promise.resolve(fn(req, res, next)).catch(next);
 
-const getMeta = (req) => {
-    const ip = req.headers['x-forwarded-for']?.split(',')[0].trim() ?? req.socket.remoteAddress;
-    let location = null;
-
-    try {
-        const geoip = require('geoip-lite');
-        const geo = geoip.lookup(ip);
-        if (geo) {
-            location = {
-                city: geo.city || null,
-                region: geo.timezone?.split('/')[1] || null,
-                country: geo.country || null,
-            };
-        }
-    } catch (error) {
-        // geoip-lite not installed or lookup failed, location remains null
-    }
-
-    return {
-        ip,
-        userAgent: req.headers['user-agent'] ?? 'unknown',
-        location,
-    };
-};
+const getMeta = (req) => ({
+    ip: req.headers['x-forwarded-for']?.split(',')[0].trim() ?? req.socket.remoteAddress,
+    userAgent: req.headers['user-agent'] ?? 'unknown',
+});
 
 // ─── Step 1: Registration ─────────────────────────────────────────────────────
 // Accepts multipart/form-data with:
@@ -102,8 +82,16 @@ export const refreshToken = asyncHandler(async (req, res) => {
 });
 
 export const logout = asyncHandler(async (req, res) => {
-    await ownerService.logout(req.body.refreshToken);
-    sendSuccess(res, null, 'Logged out');
+    const refreshToken =
+        req.body.refreshToken ||
+        req.cookies?.refreshToken;
+
+    await authService.logout(refreshToken);
+
+    res.status(200).json({
+        success: true,
+        message: 'Logged out successfully',
+    });
 });
 
 export const logoutAll = asyncHandler(async (req, res) => {

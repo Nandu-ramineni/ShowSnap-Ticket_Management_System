@@ -11,10 +11,14 @@ import { ACCOUNT_STATUS, ONBOARDING_STATUS } from '../../utils/constants.js';
 import { generateApplicationId } from '../../utils/generateApplicationId.js';
 import { sendOTPEmail, sendPasswordResetEmail } from '../../utils/nodeMailer.js';
 import logger from '../../utils/logger.js';
+import { updateActiveLogins } from '../../utils/updateActiveLogins.js';
+import { deleteCache, getCache, setCache } from '../../config/redis.js';
+import { invalidateOwnerCache } from '../../utils/invalidateOwnerCache.js';
+import getGeoLocation from '../../utils/getGeoLocation.js';
 
 const SALT_ROUNDS = 12;
 const TOKEN_OPTIONS = { issuer: env.jwt.issuer, audience: env.jwt.audience };
-
+const PROFILE_CACHE_TTL = 60 * 5; // 5 minutes
 // ─── Cloudinary folders ───────────────────────────────────────────────────────
 const CLOUDINARY_DOCS_FOLDER = 'seatsecure/theatre_owner_docs';
 
@@ -108,7 +112,6 @@ export const login = async ({ email, password }, meta = {}) => {
     const owner = await TheatreOwner.findOne({ email })
         .select('+password +rejectionReason');
 
-    // Timing-safe
     const DUMMY_HASH =
         '$2b$12$invalidhashfortimingprotectiononly000000000000000000000';
 
@@ -120,7 +123,7 @@ export const login = async ({ email, password }, meta = {}) => {
         throw ApiError.unauthorized('Invalid credentials');
     }
 
-    // Pending account
+    // Status checks
     if (owner.accountStatus === ACCOUNT_STATUS.PENDING) {
         return {
             pending: true,
@@ -128,7 +131,6 @@ export const login = async ({ email, password }, meta = {}) => {
         };
     }
 
-    // Rejected account
     if (owner.accountStatus === ACCOUNT_STATUS.REJECTED) {
         return {
             rejected: true,
@@ -136,36 +138,36 @@ export const login = async ({ email, password }, meta = {}) => {
         };
     }
 
-    // Suspended account
     if (!owner.isActive) {
         throw ApiError.forbidden(
             'Account has been suspended. Please contact support.'
         );
     }
 
-    // Deactivated account
     if (owner.accountStatus === ACCOUNT_STATUS.DEACTIVATED) {
         throw ApiError.forbidden(
             'Account has been deactivated. Please contact support.'
         );
     }
 
-    //traction
-    const ip = meta.ip;
-    const userAgent = meta.userAgent;
+    // ─── Traction ─────────────────────────────
+
     if (!owner.traction) {
         owner.traction = {};
     }
+
     owner.traction.lastLogin = new Date();
 
-    owner.traction.loginCounts = (owner.traction.loginCounts || 0) + 1;
+    owner.traction.loginCounts =
+        (owner.traction.loginCounts || 0) + 1;
 
-    if (ip) {
+    if (meta.ip) {
         owner.traction.ipAddresses = [
             ...(owner.traction.ipAddresses || []),
-            ip,
-        ].slice(-10); // keep last 10 IPs
+            meta.ip,
+        ].slice(-10);
     }
+
     if (meta.location) {
         owner.traction.lastLocation = {
             city: meta.location.city,
@@ -174,25 +176,37 @@ export const login = async ({ email, password }, meta = {}) => {
         };
     }
 
-    // activeLogins = count of active (non-expired, non-deleted) refresh tokens + new token
-    const activeTokenCount = await RefreshToken.countDocuments({
-        userId: owner._id,
-        expiresAt: { $gt: new Date() },
-        usedAt: null,
-    });
-    owner.traction.activeLogins = activeTokenCount + 1;
-
     await owner.save();
 
-    // Successful login
+    // ─── Create Session ──────────────────────
+
+    const refreshToken = await issueRefreshToken(
+        owner._id,
+        meta.userAgent,
+        meta.ip
+    );
+
+    // ─── Update Active Devices Count ─────────
+
+    await updateActiveLogins(owner._id);
+
+    // ─── Fetch Geolocation Asynchronously ────
+    // Don't wait for this — update in background to keep login fast
+    getGeoLocation(meta.ip).then((location) => {
+        if (location) {
+            TheatreOwner.findByIdAndUpdate(owner._id, {
+                $set: { 'traction.lastLocation': location },
+            }).catch((err) =>
+                logger.warn(`Failed to update geolocation for ${owner._id}: ${err.message}`)
+            );
+        }
+    });
+
+    await invalidateOwnerCache(owner._id);
     return {
         owner: owner.toPublicJSON(),
         accessToken: signAccessToken(owner),
-        refreshToken: await issueRefreshToken(
-            owner._id,
-            meta.userAgent,
-            meta.ip
-        ),
+        refreshToken,
     };
 };
 
@@ -235,19 +249,51 @@ export const refreshTokens = async (rawToken, meta = {}) => {
 
 export const logout = async (rawToken) => {
     if (!rawToken) return;
-    await RefreshToken.deleteOne({ tokenHash: hashToken(rawToken) });
+
+    const tokenHash = hashToken(rawToken);
+
+    const tokenDoc = await RefreshToken.findOne({
+        tokenHash,
+    });
+
+    if (!tokenDoc) return;
+
+    // Delete current device session
+    await RefreshToken.deleteOne({
+        tokenHash,
+    });
+
+    // Update active devices count
+    await updateActiveLogins(tokenDoc.userId);
+    await invalidateOwnerCache(tokenDoc.userId);
 };
 
 export const logoutAll = async (ownerId) => {
     await RefreshToken.deleteMany({ userId: ownerId });
+    await invalidateOwnerCache(ownerId);
 };
 
 // ─── Get profile ──────────────────────────────────────────────────────────────
 
 export const getProfile = async (ownerId) => {
+    const cacheKey = `theatreOwner:profile:${ownerId}`;
+    const cachedProfile = await getCache(cacheKey);
+    if (cachedProfile) {
+        return cachedProfile;
+    }
     const owner = await TheatreOwner.findById(ownerId).select('+traction');
-    if (!owner) throw ApiError.notFound('Theatre owner not found');
-    return owner.toPublicJSON();
+    if (!owner) {
+        throw ApiError.notFound(
+            'Theatre owner not found'
+        );
+    }
+    const profile = owner.toPublicJSON();
+    await setCache(
+        cacheKey,
+        profile,
+        PROFILE_CACHE_TTL
+    );
+    return profile;
 };
 
 // ─── Step 3 — Onboarding ─────────────────────────────────────────────────────
@@ -368,6 +414,7 @@ export const updateProfile = async (ownerId, updates) => {
         { new: true, runValidators: true }
     );
     if (!owner) throw ApiError.notFound('Theatre owner not found');
+    await invalidateOwnerCache(ownerId);
     return owner.toPublicJSON();
 };
 
