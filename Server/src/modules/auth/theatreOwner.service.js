@@ -186,23 +186,29 @@ export const login = async ({ email, password }, meta = {}) => {
         meta.ip
     );
 
-    // ─── Update Active Devices Count ─────────
+    // ─── Background Tasks (non-critical, don't block response) ─────
 
-    await updateActiveLogins(owner._id);
+    // Update active devices count
+    updateActiveLogins(owner._id).catch((err) =>
+        logger.warn(`Failed to update active logins: ${err.message}`)
+    );
 
-    // ─── Fetch Geolocation Asynchronously ────
-    // Don't wait for this — update in background to keep login fast
+    // Fetch geolocation asynchronously
     getGeoLocation(meta.ip).then((location) => {
         if (location) {
             TheatreOwner.findByIdAndUpdate(owner._id, {
                 $set: { 'traction.lastLocation': location },
             }).catch((err) =>
-                logger.warn(`Failed to update geolocation for ${owner._id}: ${err.message}`)
+                logger.warn(`Failed to update geolocation: ${err.message}`)
             );
         }
     });
 
-    await invalidateOwnerCache(owner._id);
+    // Invalidate cache
+    invalidateOwnerCache(owner._id).catch((err) =>
+        logger.warn(`Failed to invalidate cache: ${err.message}`)
+    );
+
     return {
         owner: owner.toPublicJSON(),
         accessToken: signAccessToken(owner),
@@ -263,9 +269,13 @@ export const logout = async (rawToken) => {
         tokenHash,
     });
 
-    // Update active devices count
-    await updateActiveLogins(tokenDoc.userId);
-    await invalidateOwnerCache(tokenDoc.userId);
+    // Update active devices count (non-blocking)
+    updateActiveLogins(tokenDoc.userId).catch((err) =>
+        logger.warn(`Failed to update active logins on logout: ${err.message}`)
+    );
+    invalidateOwnerCache(tokenDoc.userId).catch((err) =>
+        logger.warn(`Failed to invalidate cache on logout: ${err.message}`)
+    );
 };
 
 export const logoutAll = async (ownerId) => {
