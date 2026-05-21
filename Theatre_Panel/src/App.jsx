@@ -18,6 +18,7 @@ import PublicRoute from './components/PublicRoute';
 import RejectedApproval from './components/Auth/RejectedApproval';
 import Onboarding from './Pages/Onboarding/Onboarding';
 import TheatreProfile from './Pages/TheatreProfile/TheatreProfile';
+import ScreenManager from './Pages/Screens/ScreenManager';
 import ResetPassword from './Pages/ForgotPassword/ResetPassword';
 
 function App() {
@@ -75,7 +76,7 @@ function App() {
                 >
                     <Route path="/dashboard" element={<Dashboard />} />
                     <Route path="/theatre" element={<TheatreProfile />} />
-                    <Route path="/screens" element={<Placeholder title="Screen Manager" />} />
+                    <Route path="/screens" element={<ScreenManager />} />
                     <Route path="/shows" element={<Placeholder title="Show Scheduler" />} />
                     <Route path="/seatmap" element={<Placeholder title="Live Seat Map" />} />
                     <Route path="/layout-editor" element={<Placeholder title="Seat Layout Editor" />} />

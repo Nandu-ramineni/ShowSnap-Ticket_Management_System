@@ -50,6 +50,38 @@ const screenSchema = new mongoose.Schema(
 // Auto-update totalSeats & theatre.totalScreens
 screenSchema.pre('save', function (next) {
   if (this.isModified('seatLayout')) {
+    // Validate seat layout integrity
+    const labels = new Set();
+    const rowMap = {};
+
+    for (const seat of this.seatLayout) {
+      // Check for duplicates
+      if (labels.has(seat.label)) {
+        throw new Error(`Duplicate seat label: ${seat.label}`);
+      }
+      labels.add(seat.label);
+
+      // Validate row format (A-Z)
+      if (!/^[A-Z]$/.test(seat.row)) {
+        throw new Error(`Invalid row format: ${seat.row}. Rows must be A-Z.`);
+      }
+
+      // Track seats per row
+      if (!rowMap[seat.row]) rowMap[seat.row] = [];
+      rowMap[seat.row].push(seat.number);
+    }
+
+    // Validate seat numbering per row is sequential
+    for (const [row, numbers] of Object.entries(rowMap)) {
+      const sorted = numbers.sort((a, b) => a - b);
+      for (let i = 0; i < sorted.length; i++) {
+        if (sorted[i] !== i + 1) {
+          throw new Error(`Row ${row}: seat numbers must be sequential starting from 1`);
+        }
+      }
+    }
+
+    // Update total seats count (exclude blocked seats)
     this.totalSeats = this.seatLayout.filter((s) => !s.isBlocked).length;
   }
   next();

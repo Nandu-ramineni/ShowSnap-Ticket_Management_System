@@ -1,9 +1,65 @@
 import { Router } from 'express';
+import { body, param } from 'express-validator';
 import * as screenController from './screen.controller.js';
 import { authenticate, authorize } from '../../middlewares/auth.middleware.js';
-import { ROLES } from '../../utils/constants.js';
+import { validate } from '../../utils/validate.js';
+import { ROLES, SCREEN_TYPES, SEAT_TYPES } from '../../utils/constants.js';
 
 const router = Router({ mergeParams: true });
+
+// ─── Validators ───────────────────────────────────────────────────────────────────
+
+const v = {
+  name: body('name')
+    .trim()
+    .notEmpty().withMessage('Screen name is required')
+    .isLength({ max: 150 }).withMessage('Screen name must be 150 chars or fewer'),
+
+  screenType: body('screenType')
+    .isIn(Object.values(SCREEN_TYPES))
+    .withMessage(`Screen type must be one of: ${Object.values(SCREEN_TYPES).join(', ')}`),
+
+  pricing: body('pricing')
+    .optional()
+    .custom((val) => {
+      if (!val || typeof val !== 'object') return true;
+      for (const [type, price] of Object.entries(val)) {
+        if (typeof price !== 'number' || price < 0) {
+          throw new Error(`Pricing for ${type} must be a non-negative number`);
+        }
+      }
+      return true;
+    }),
+
+  seatLayout: body('seatLayout')
+    .isArray({ min: 1 }).withMessage('Seat layout must have at least one seat')
+    .custom((seats) => {
+      const labels = new Set();
+      for (const seat of seats) {
+        if (!seat.row || !seat.number || !seat.label) {
+          throw new Error('Each seat must have row, number, and label');
+        }
+        if (!/^[A-Z]$/.test(seat.row)) {
+          throw new Error(`Seat row must be A-Z, got: ${seat.row}`);
+        }
+        if (!Number.isInteger(seat.number) || seat.number < 1) {
+          throw new Error(`Seat number must be a positive integer, got: ${seat.number}`);
+        }
+        if (labels.has(seat.label)) {
+          throw new Error(`Duplicate seat label: ${seat.label}`);
+        }
+        labels.add(seat.label);
+        if (!Object.values(SEAT_TYPES).includes(seat.type)) {
+          throw new Error(`Invalid seat type: ${seat.type}`);
+        }
+      }
+      return true;
+    }),
+
+  screenId: param('id')
+    .isMongoId().withMessage('Valid screen ID required'),
+};
+
 
 /**
  * @swagger
@@ -112,7 +168,16 @@ router.get('/:id/seat-layout', screenController.getSeatLayout);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER), screenController.createScreen);
+router.post('/',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER),
+  v.name,
+  v.screenType,
+  v.pricing,
+  v.seatLayout,
+  validate,
+  screenController.createScreen
+);
 
 /**
  * @swagger
@@ -155,7 +220,24 @@ router.post('/', authenticate, authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER), scre
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.put('/:id',    authenticate, authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER), screenController.updateScreen);
-router.delete('/:id', authenticate, authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER), screenController.deleteScreen);
+router.put('/:id',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER),
+  v.screenId,
+  v.name,
+  v.screenType,
+  v.pricing,
+  v.seatLayout,
+  validate,
+  screenController.updateScreen
+);
+
+router.delete('/:id',
+  authenticate,
+  authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER),
+  v.screenId,
+  validate,
+  screenController.deleteScreen
+);
 
 export default router;

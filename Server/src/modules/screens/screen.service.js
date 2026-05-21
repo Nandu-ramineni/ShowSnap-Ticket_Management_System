@@ -1,5 +1,6 @@
 import Screen from './screen.model.js';
 import Theatre from '../theatres/theatre.model.js';
+import Showtime from '../showtimes/showtime.model.js';
 import ApiError from '../../utils/ApiError.js';
 
 export const createScreen = async (theatreId, data, userId, role) => {
@@ -43,14 +44,23 @@ export const deleteScreen = async (screenId, userId, role) => {
     throw ApiError.forbidden('Not authorized');
   }
 
+  // Check for active showtimes on this screen
+  const activeShowtimes = await Showtime.findOne({
+    screen: screenId,
+    status: { $in: ['scheduled'] }
+  });
+
+  if (activeShowtimes) {
+    throw ApiError.badRequest('Cannot delete screen with active showtimes. Cancel or complete all shows first.');
+  }
+
   screen.isActive = false;
   await screen.save();
   await Theatre.findByIdAndUpdate(screen.theatre._id, { $inc: { totalScreens: -1 } });
+  return screen;
 };
 
-/**
- * Returns a seat map grouped by row for frontend rendering
- */
+
 export const getSeatLayout = async (screenId) => {
   const screen = await Screen.findById(screenId).select('seatLayout pricing name screenType');
   if (!screen) throw ApiError.notFound('Screen not found');
