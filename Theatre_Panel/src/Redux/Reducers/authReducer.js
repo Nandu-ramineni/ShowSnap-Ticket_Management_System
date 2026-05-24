@@ -127,7 +127,7 @@ export const authReducer = (state = initialState, action) => {
             return {
                 ...state,
                 isLoading: false,
-                user: action.payload,
+                user: structuredClone(action.payload),
                 error: null,
             };
 

@@ -205,7 +205,7 @@ export default function EditProfile() {
                 theatreInfo: {
                     website: formData.theatreInfo.website,
                     contactPhone: formData.theatreInfo.contactPhone,
-                    contactEmail: formData.theatreInfo.contactEmail,
+                    // email is intentionally excluded from update (immutable) - can be changed via support only
                     // theatreName is intentionally excluded (immutable)
                 },
                 location: formData.location,
@@ -217,7 +217,8 @@ export default function EditProfile() {
             toast.success('Profile updated successfully!');
             navigate('/theatre');
         } catch (err) {
-            // Error already handled in action and displayed via error state
+            console.error('Error updating profile:', err);
+            toast.error('An error occurred while updating the profile. Please try again.');
         }
     };
 
@@ -259,7 +260,7 @@ export default function EditProfile() {
                             <CardDescription>Your personal details</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div >
+                            <div className="space-y-2">
                                 <Label htmlFor="name">Owner Name *</Label>
                                 <Input
                                     id="name"
@@ -272,17 +273,17 @@ export default function EditProfile() {
                                 {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
                             </div>
 
-                            <div>
+                            <div className="space-y-2">
                                 <Label>Theatre Name</Label>
-                                <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-gray-50">
-                                    <Lock className="h-4 w-4 text-gray-500" />
-                                    <span className="text-gray-600">{formData.theatreInfo.theatreName}</span>
-                                    <span className="text-xs text-gray-500 ml-auto">(Read-only)</span>
+                                <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-muted-foreground">
+                                    <Lock className="h-4 w-4 text-gray-900" />
+                                    <span className="text-gray-900">{formData.theatreInfo.theatreName}</span>
+                                    <span className="text-xs text-gray-900 ml-auto">(Read-only)</span>
                                 </div>
                                 <p className="text-xs text-gray-500 mt-1">Contact support to change theatre name</p>
                             </div>
 
-                            <div>
+                            <div className="pt-4 border-t">
                                 <label className="flex items-center gap-2">
                                     <Checkbox
                                         name="isMultiplex"
@@ -304,7 +305,7 @@ export default function EditProfile() {
                             <CardDescription>Contact details for your theatre</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
+                            <div className="space-y-2">
                                 <Label htmlFor="website">Website</Label>
                                 <Input
                                     id="website"
@@ -320,8 +321,8 @@ export default function EditProfile() {
                                 )}
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
+                            <div className="grid grid-cols-1 gap-4">
+                                <div className="space-y-2">
                                     <Label htmlFor="contactPhone">Contact Phone</Label>
                                     <Input
                                         id="contactPhone"
@@ -336,22 +337,16 @@ export default function EditProfile() {
                                         <p className="text-xs text-red-600 mt-1">{errors['theatreInfo.contactPhone']}</p>
                                     )}
                                 </div>
-
-                                <div>
-                                    <Label htmlFor="contactEmail">Contact Email</Label>
-                                    <Input
-                                        id="contactEmail"
-                                        name="theatreInfo.contactEmail"
-                                        type="email"
-                                        value={formData.theatreInfo.contactEmail}
-                                        onChange={handleChange}
-                                        placeholder="contact@theatre.com"
-                                        className={errors['theatreInfo.contactEmail'] ? 'border-red-500' : ''}
-                                    />
-                                    {errors['theatreInfo.contactEmail'] && (
-                                        <p className="text-xs text-red-600 mt-1">{errors['theatreInfo.contactEmail']}</p>
-                                    )}
+                                <div className="space-y-2">
+                                <Label>Contact Email</Label>
+                                <div className="flex items-center gap-2 px-3 py-2 border border-gray-300 rounded-lg bg-muted-foreground">
+                                    <Lock className="h-4 w-4 text-gray-900" />
+                                    <span className="text-gray-900">{formData.theatreInfo.contactEmail}</span>
+                                    <span className="text-xs text-gray-900 ml-auto">(Read-only)</span>
                                 </div>
+                                <p className="text-xs text-gray-500 mt-1">Contact support to change contact email</p>
+                            </div>
+                                
                             </div>
                         </CardContent>
                     </Card>
@@ -363,7 +358,7 @@ export default function EditProfile() {
                             <CardDescription>Theatre address details</CardDescription>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            <div>
+                            <div className="space-y-2">
                                 <Label htmlFor="streetAddress">Street Address</Label>
                                 <Input
                                     id="streetAddress"
@@ -379,7 +374,7 @@ export default function EditProfile() {
                             </div>
 
                             <div className="grid grid-cols-3 gap-4">
-                                <div>
+                                <div className="space-y-2">
                                     <Label htmlFor="city">City</Label>
                                     <Input
                                         id="city"
@@ -394,7 +389,7 @@ export default function EditProfile() {
                                     )}
                                 </div>
 
-                                <div>
+                                <div className="space-y-2">
                                     <Label htmlFor="state">State</Label>
                                     <Input
                                         id="state"
@@ -409,7 +404,7 @@ export default function EditProfile() {
                                     )}
                                 </div>
 
-                                <div>
+                                <div className="space-y-2">
                                     <Label htmlFor="pincode">Pincode</Label>
                                     <Input
                                         id="pincode"
@@ -448,7 +443,7 @@ export default function EditProfile() {
                             </label>
 
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
+                                <div className="space-y-2">
                                     <Label htmlFor="cutoffHours">Cancellation Cutoff Hours</Label>
                                     <Input
                                         id="cutoffHours"
@@ -465,7 +460,7 @@ export default function EditProfile() {
                                     )}
                                 </div>
 
-                                <div>
+                                <div className="space-y-2">
                                     <Label htmlFor="refundPercentage">Refund Percentage (%)</Label>
                                     <Input
                                         id="refundPercentage"
@@ -487,7 +482,7 @@ export default function EditProfile() {
 
 
                     {/* Amenities */}
-                    <Card>
+                    <Card className="col-span-2">
                         <CardHeader>
                             <CardTitle>Amenities</CardTitle>
                             <CardDescription>What amenities does your theatre offer?</CardDescription>
@@ -497,7 +492,7 @@ export default function EditProfile() {
                                 {AMENITIES.map((amenity) => {
                                     const Icon = amenity.icon;
                                     return (
-                                        <label key={amenity.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer">
+                                        <label key={amenity.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-muted cursor-pointer">
                                             <Checkbox
                                                 name={`amenities.${amenity.id}`}
                                                 checked={formData.amenities[amenity.id] || false}

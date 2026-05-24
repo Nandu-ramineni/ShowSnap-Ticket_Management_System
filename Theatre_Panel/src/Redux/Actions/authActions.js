@@ -268,16 +268,16 @@ export const updateTheatreProfile = (formData) => async (dispatch) => {
         const { data } = await api.patch('/theatre-owner/profile', formData);
 
         const { owner } = data.data;
-
+        const safeOwner = structuredClone(owner);
         // ── Update localStorage with latest owner data ────────────────────────
-        localStorage.setItem('authUser', JSON.stringify(owner));
+        localStorage.setItem('authUser', JSON.stringify(safeOwner));
 
         dispatch({
             type: ActionTypes.PROFILE_UPDATE_SUCCESS,
-            payload: owner,
+            payload: safeOwner,
         });
 
-        return { success: true, owner };
+        return { success: true, owner: safeOwner };
 
     } catch (error) {
         const message =
