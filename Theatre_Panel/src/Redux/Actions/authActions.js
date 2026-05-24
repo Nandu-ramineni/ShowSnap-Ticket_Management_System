@@ -253,6 +253,46 @@ export const saveTheatreOnboarding = (formData) => async (dispatch) => {
     }
 };
 
+// ─── Theatre Profile Update (post-onboarding) ──────────────────────────────────
+
+/**
+ * PATCH /theatre-owner/profile
+ * Updates theatre owner profile (theatreInfo, location, amenities, cancellation policy)
+ * On success: dispatches PROFILE_UPDATE_SUCCESS, updates authUser in localStorage
+ * On failure: dispatches PROFILE_UPDATE_FAILURE with error message
+ */
+export const updateTheatreProfile = (formData) => async (dispatch) => {
+    try {
+        dispatch({ type: ActionTypes.PROFILE_UPDATE_REQUEST });
+
+        const { data } = await api.patch('/theatre-owner/profile', formData);
+
+        const { owner } = data.data;
+
+        // ── Update localStorage with latest owner data ────────────────────────
+        localStorage.setItem('authUser', JSON.stringify(owner));
+
+        dispatch({
+            type: ActionTypes.PROFILE_UPDATE_SUCCESS,
+            payload: owner,
+        });
+
+        return { success: true, owner };
+
+    } catch (error) {
+        const message =
+            error.response?.data?.message ||
+            'Profile update failed. Please try again.';
+
+        dispatch({
+            type: ActionTypes.PROFILE_UPDATE_FAILURE,
+            payload: message,
+        });
+
+        throw new Error(message);
+    }
+};
+
 // ─── Password Reset: Step 1 - Request OTP ─────────────────────────────────────
 
 export const requestPasswordReset = (email) => async (dispatch) => {

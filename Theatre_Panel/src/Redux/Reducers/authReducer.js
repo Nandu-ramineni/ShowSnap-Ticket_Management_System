@@ -119,6 +119,25 @@ export const authReducer = (state = initialState, action) => {
                 error: action.payload,
             };
 
+        // ── Theatre Profile Update ──────────────────────────────────────────────
+        case ActionTypes.PROFILE_UPDATE_REQUEST:
+            return { ...state, isLoading: true, error: null };
+
+        case ActionTypes.PROFILE_UPDATE_SUCCESS:
+            return {
+                ...state,
+                isLoading: false,
+                user: action.payload,
+                error: null,
+            };
+
+        case ActionTypes.PROFILE_UPDATE_FAILURE:
+            return {
+                ...state,
+                isLoading: false,
+                error: action.payload,
+            };
+
         // ── Misc ──────────────────────────────────────────────────────────────
         case ActionTypes.AUTH_CLEAR_ERROR:
             return { ...state, error: null };

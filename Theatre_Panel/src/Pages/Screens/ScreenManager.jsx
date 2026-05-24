@@ -63,7 +63,7 @@ export default function ScreenManager() {
       )}
 
       {/* Content */}
-      <div className="rounded-lg bg-muted shadow">
+      <div className="rounded-lg bg-sidebar shadow">
         {loading && !screens.length ? (
           <div className="flex justify-center py-12">
             <div className="space-y-3 text-center">

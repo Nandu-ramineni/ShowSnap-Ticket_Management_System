@@ -139,8 +139,8 @@ export default function SeatLayoutEditor({ initialLayout = [], onLayoutChange })
       </div>
 
       {/* Canvas */}
-      <div className="border-2 border-dashed border-gray-300 rounded-lg bg-white p-4 overflow-auto max-h-80">
-        <svg width={canvasWidth} height={canvasHeight} className="bg-white">
+      <div className="border-2 border-dashed border-gray-300 rounded-lg bg-sidebar p-4 overflow-auto max-h-80">
+        <svg width={canvasWidth} height={canvasHeight} className="bg-sidebar">
           {/* Grid background */}
           <defs>
             <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
@@ -196,7 +196,7 @@ export default function SeatLayoutEditor({ initialLayout = [], onLayoutChange })
 
         {/* Selected Seat Editor */}
         {selectedSeat && (
-          <div className="space-y-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+          <div className="space-y-3 p-3 bg-sidebar rounded-lg border border-blue-200">
             <div>
               <h4 className="text-sm font-semibold text-gray-700">Selected: {selectedSeat.label}</h4>
               <p className="text-xs text-gray-600">Row {selectedSeat.row}, Seat {selectedSeat.number}</p>

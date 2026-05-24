@@ -4,7 +4,6 @@ import { createScreen, updateScreen, toggleFormModal, clearScreenError } from '@
 import { selectScreenFormData, selectScreensLoading, selectScreensError, selectSelectedScreen } from '@/Redux/Selectors/screensSelectors';
 import ScreenForm from './ScreenForm';
 import { X } from 'lucide-react';
-i
 
 export default function ScreenFormModal({ theatreId, onClose }) {
   const dispatch = useDispatch();
@@ -36,7 +35,7 @@ export default function ScreenFormModal({ theatreId, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center ">
-      <div className="w-full max-w-2xl max-h-[90vh] bg-muted rounded-lg shadow-xl overflow-y-auto">
+      <div className="w-full max-w-2xl max-h-[90vh] bg-sidebar border border-sidebar rounded-lg shadow-xl overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between sticky top-0  border-b p-6">
           <h2 className="text-2xl font-bold ">
