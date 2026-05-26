@@ -195,6 +195,7 @@ export const login = async ({ email, password }, meta = {}) => {
 
     // Fetch geolocation asynchronously
     getGeoLocation(meta.ip).then((location) => {
+        console.log('Geolocation result:', location);
         if (location) {
             TheatreOwner.findByIdAndUpdate(owner._id, {
                 $set: { 'traction.lastLocation': location },
@@ -378,6 +379,7 @@ export const saveOnboarding = async (ownerId, updates) => {
         updated.onboardingStatus = ONBOARDING_STATUS.COMPLETED;
         await updated.save();
     }
+    
 
     return {
         owner: updated.toPublicJSON(),
