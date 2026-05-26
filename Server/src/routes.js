@@ -10,7 +10,7 @@ import showtimeRoutes  from './modules/showtimes/showtime.routes.js';
 import seatRoutes      from './modules/seats/seat.routes.js';
 import bookingRoutes   from './modules/bookings/booking.routes.js';
 import reviewRoutes    from './modules/reviews/review.routes.js';
-import adminRoutes     from './modules/auth/admin.routes.js';
+import adminRoutes     from './modules/admin/admin.routes.js';
 import { handleWebhook } from './modules/payments/payment.webhook.js';
 
 const router = Router();
