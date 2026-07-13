@@ -168,13 +168,6 @@ export const login = async ({ email, password }, meta = {}) => {
         ].slice(-10);
     }
 
-    if (meta.location) {
-        owner.traction.lastLocation = {
-            city: meta.location.city,
-            region: meta.location.region,
-            country: meta.location.country,
-        };
-    }
 
     await owner.save();
 
@@ -192,24 +185,6 @@ export const login = async ({ email, password }, meta = {}) => {
     updateActiveLogins(owner._id).catch((err) =>
         logger.warn(`Failed to update active logins: ${err.message}`)
     );
-
-    // Fetch geolocation asynchronously
-    getGeoLocation(meta.ip).then((location) => {
-        console.log('Geolocation result:', location);
-        if (location) {
-            TheatreOwner.findByIdAndUpdate(owner._id, {
-                $set: { 'traction.lastLocation': location },
-            }).catch((err) =>
-                logger.warn(`Failed to update geolocation: ${err.message}`)
-            );
-        }
-    });
-
-    // Invalidate cache
-    invalidateOwnerCache(owner._id).catch((err) =>
-        logger.warn(`Failed to invalidate cache: ${err.message}`)
-    );
-
     return {
         owner: owner.toPublicJSON(),
         accessToken: signAccessToken(owner),
