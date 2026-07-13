@@ -142,7 +142,7 @@ export default function ScreenForm({ initialData = null, onSubmit, isLoading = f
               name="screenType"
               value={formData.screenType}
               onChange={handleChange}
-              className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+              className={`w-full px-3 py-2 bg-background border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 fieldErrors.screenType ? 'border-red-500' : 'border-gray-300'
               }`}
             >

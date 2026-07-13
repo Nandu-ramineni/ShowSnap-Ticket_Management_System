@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { toast } from 'sonner';
 import { Lock, Loader } from 'lucide-react';
@@ -16,15 +16,17 @@ import {
 } from '@/components/ui/card';
 
 import { resetPassword } from '@/Redux/Actions/authActions';
+import Logo from '@/assets/Logo.png';
 
 const ResetPassword = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
-    const [searchParams] = useSearchParams();
+    const { search } = useLocation();
+    const params = new URLSearchParams(search);
 
-    const token = searchParams.get('token');
-    const email = searchParams.get('email');
+    const token = params.get("token");
+    const email = params.get("email");
 
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -76,6 +78,19 @@ const ResetPassword = () => {
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
             <div className="w-full max-w-md">
+                <div className="flex flex-col items-center py-6 gap-1 select-none">
+                    <img
+                        src={Logo}
+                        alt="CineVault logo"
+                        className="w-16 h-16"
+                    />
+                    <h1 className="text-2xl font-bold">
+                        CineVault!
+                    </h1>
+                    <p className="text-sm text-muted-foreground">
+                        Your seats. Your cinema.
+                    </p>
+                </div>
                 <Card className="shadow-xl">
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2">
