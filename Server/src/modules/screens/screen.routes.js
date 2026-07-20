@@ -5,7 +5,15 @@ import { authenticate, authorize } from '../../middlewares/auth.middleware.js';
 import { validate } from '../../utils/validate.js';
 import { ROLES, SCREEN_TYPES, SEAT_TYPES } from '../../utils/constants.js';
 
-const router = Router({ mergeParams: true });
+const router = Router();
+
+// Create is mounted ONLY at /theatres/:theatreId/screens (mergeParams: true so
+// req.params.theatreId is visible to the controller). It used to also be
+// reachable via the flat /screens mount below, with no theatreId in params at
+// all — that silent gap was the actual root cause of the "theatre_id missing
+// on screen creation" bug. Splitting create into its own router removes the
+// bypass instead of just fixing the symptom at the controller.
+const createRouter = Router({ mergeParams: true });
 
 // ─── Validators ───────────────────────────────────────────────────────────────────
 
@@ -168,7 +176,7 @@ router.get('/:id/seat-layout', screenController.getSeatLayout);
  *       404:
  *         $ref: '#/components/responses/NotFound'
  */
-router.post('/',
+createRouter.post('/',
   authenticate,
   authorize(ROLES.ADMIN, ROLES.THEATRE_OWNER),
   v.name,
@@ -240,4 +248,5 @@ router.delete('/:id',
   screenController.deleteScreen
 );
 
+export { createRouter as screenCreateRoutes };
 export default router;

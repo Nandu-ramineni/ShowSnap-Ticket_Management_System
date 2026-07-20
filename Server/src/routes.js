@@ -5,7 +5,7 @@ import authRoutes      from './modules/auth/auth.routes.js';
 import theatreOwnerRoutes from './modules/auth/theatreOwner.routes.js';
 import movieRoutes     from './modules/movies/movie.routes.js';
 import theatreRoutes   from './modules/theatres/theatre.routes.js';
-import screenRoutes    from './modules/screens/screen.routes.js';
+import screenRoutes, { screenCreateRoutes } from './modules/screens/screen.routes.js';
 import showtimeRoutes  from './modules/showtimes/showtime.routes.js';
 import seatRoutes      from './modules/seats/seat.routes.js';
 import bookingRoutes   from './modules/bookings/booking.routes.js';
@@ -25,14 +25,23 @@ router.use('/admin', adminRoutes);
 // ─── Movies + nested resources ───────────────────────────────
 router.use('/movies', movieRoutes);
 router.use('/movies/:movieId/reviews',   reviewRoutes);
-router.use('/movies/:movieId/showtimes', showtimeRoutes);
 
 // ─── Theatres + Screens ──────────────────────────────────────
+// screenCreateRoutes (POST only) is mounted solely on the nested path so
+// req.params.theatreId is always present; screenRoutes (GET/PUT/DELETE by
+// screen id) doesn't need a theatreId at all and is mounted flat. Previously
+// both GET/PUT/DELETE *and* POST were the same router mounted at both paths,
+// so POST /screens silently bypassed theatreId — see screen.routes.js.
 router.use('/theatres',                    theatreRoutes);
-router.use('/theatres/:theatreId/screens', screenRoutes);
+router.use('/theatres/:theatreId/screens', screenCreateRoutes);
 router.use('/screens',                     screenRoutes);
 
 // ─── Showtimes + Seats ───────────────────────────────────────
+// (No nested /movies/:movieId/showtimes mount — showtime.routes.js never
+// used mergeParams, so that param was never actually reachable there; movie,
+// theatre, and screen are all taken from the request body instead. It also
+// was never part of the documented API — the Swagger paths below have always
+// been flat under /showtimes.)
 router.use('/showtimes',                   showtimeRoutes);
 router.use('/showtimes/:showtimeId/seats', seatRoutes);
 
