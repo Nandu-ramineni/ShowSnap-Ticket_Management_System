@@ -34,6 +34,15 @@ app.use(morgan(env.IS_PRODUCTION ? 'combined' : 'dev', {
 
 // ─── Body parsing ─────────────────────────────────────────────────────────────
 // NOTE: Stripe webhook uses express.raw() — registered per-route in routes.js
+//
+// Screen create/update carries a full seatLayout array — a realistic 240-seat
+// auditorium (16 rows x 15 seats) serializes to ~20KB, well over the default
+// 10kb limit below. These two routes get a bigger limit applied first; once a
+// body is parsed, express.json() is a no-op on the way past, so every other
+// route still gets the strict 10kb limit.
+app.use('/api/v1/theatres/:theatreId/screens', express.json({ limit: '1mb' }));
+app.use('/api/v1/screens',                     express.json({ limit: '1mb' }));
+
 app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 

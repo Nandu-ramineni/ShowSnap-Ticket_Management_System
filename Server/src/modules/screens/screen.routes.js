@@ -127,6 +127,7 @@ router.get('/:id/seat-layout', screenController.getSeatLayout);
  * /theatres/{theatreId}/screens:
  *   post:
  *     summary: Create a screen inside a theatre (Admin or Theatre Owner)
+ *     description: Request body limit is 1MB on this route (raised from the API's default 10kb) to fit large seatLayout arrays.
  *     tags: [Screens]
  *     security:
  *       - BearerAuth: []
@@ -192,6 +193,7 @@ createRouter.post('/',
  * /screens/{id}:
  *   put:
  *     summary: Update a screen (Admin or Theatre Owner)
+ *     description: Request body limit is 1MB on this route (raised from the API's default 10kb) to fit large seatLayout arrays.
  *     tags: [Screens]
  *     security:
  *       - BearerAuth: []
