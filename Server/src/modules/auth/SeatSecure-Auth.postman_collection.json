@@ -826,6 +826,115 @@
                     }
                 },
                 {
+                    "name": "Save Onboarding \u2014 Partial (in_progress)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('onboardingStatus is in_progress', () => pm.expect(res.data.owner.onboardingStatus).to.eql('in_progress'));",
+                                    "pm.test('onboardingComplete is false', () => pm.expect(res.data.onboardingComplete).to.be.false);",
+                                    "pm.test('ownedTheatre not yet set', () => pm.expect(res.data.owner.ownedTheatre).to.not.be.ok);"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/theatre-owner/onboarding",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Priya Nair\",\n  \"isMultiplex\": true,\n  \"theatreInfo\": {\n    \"theatreName\": \"INOX Multiplex\",\n    \"contactPhone\": \"+918800123456\"\n  }\n}"
+                        }
+                    }
+                },
+                {
+                    "name": "Create Screen \u2014 Before Onboarding Complete (expect 400)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                                ],
+                                "type": "text/javascript"
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "POST",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            }
+                        ],
+                        "url": {
+                            "raw": "{{baseUrl}}/theatres/000000000000000000000001/screens"
+                        },
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"name\": \"Screen 1\",\n  \"screenType\": \"STANDARD\",\n  \"seatLayout\": [\n    {\n      \"row\": \"A\",\n      \"number\": 1,\n      \"label\": \"A1\",\n      \"type\": \"silver\",\n      \"isBlocked\": false\n    }\n  ]\n}",
+                            "options": {
+                                "raw": {
+                                    "language": "json"
+                                }
+                            }
+                        }
+                    }
+                },
+                {
+                    "name": "Save Onboarding \u2014 Complete (creates Theatre, sets ownedTheatre)",
+                    "event": [
+                        {
+                            "listen": "test",
+                            "script": {
+                                "exec": [
+                                    "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                                    "const res = pm.response.json();",
+                                    "pm.test('onboardingStatus is completed', () => pm.expect(res.data.owner.onboardingStatus).to.eql('completed'));",
+                                    "pm.test('onboardingComplete is true', () => pm.expect(res.data.onboardingComplete).to.be.true);",
+                                    "pm.test('ownedTheatre is set', () => pm.expect(res.data.owner.ownedTheatre).to.be.ok);",
+                                    "if (res.data?.owner?.ownedTheatre) {",
+                                    "  pm.collectionVariables.set('ownedTheatreId', res.data.owner.ownedTheatre);",
+                                    "  console.log('\u2705 ownedTheatreId saved:', res.data.owner.ownedTheatre);",
+                                    "}"
+                                ]
+                            }
+                        }
+                    ],
+                    "request": {
+                        "method": "PATCH",
+                        "url": "{{baseUrl}}/theatre-owner/onboarding",
+                        "header": [
+                            {
+                                "key": "Authorization",
+                                "value": "Bearer {{ownerToken}}"
+                            },
+                            {
+                                "key": "Content-Type",
+                                "value": "application/json"
+                            }
+                        ],
+                        "body": {
+                            "mode": "raw",
+                            "raw": "{\n  \"theatreInfo\": {\n    \"website\": \"https://inoxmovies.com\",\n    \"contactPhone\": \"+918800123456\",\n    \"contactEmail\": \"contact@inoxcinemas.com\"\n  },\n  \"location\": {\n    \"streetAddress\": \"42 MG Road, Indiranagar\",\n    \"city\": \"Bengaluru\",\n    \"state\": \"Karnataka\",\n    \"pincode\": \"560038\"\n  },\n  \"amenities\": {\n    \"parking\": true,\n    \"foodCourt\": true,\n    \"dolbySound\": true,\n    \"threeD\": true,\n    \"reclinerSeats\": true\n  },\n  \"cancellationPolicy\": {\n    \"allowCancellations\": true,\n    \"cutoffHours\": 3,\n    \"refundPercentage\": 75\n  }\n}"
+                        }
+                    }
+                },
+                {
                     "name": "Update Profile \u2014 Amenities + Cancellation Policy",
                     "event": [
                         {
@@ -1089,41 +1198,6 @@
                                 "body": {
                                     "mode": "raw",
                                     "raw": "{\n  \"name\": \"Screen 1 \\u2014 IMAX\",\n  \"screenType\": \"IMAX\",\n  \"soundSystem\": \"Dolby Atmos\",\n  \"projectionType\": \"IMAX Laser 4K\",\n  \"pricing\": {\n    \"recliner\": 600,\n    \"premium\": 450,\n    \"gold\": 350,\n    \"silver\": 250\n  },\n  \"seatLayout\": [\n    {\n      \"row\": \"A\",\n      \"number\": 1,\n      \"label\": \"A1\",\n      \"type\": \"recliner\",\n      \"isBlocked\": false,\n      \"x\": 0,\n      \"y\": 0\n    },\n    {\n      \"row\": \"A\",\n      \"number\": 2,\n      \"label\": \"A2\",\n      \"type\": \"recliner\",\n      \"isBlocked\": false,\n      \"x\": 1,\n      \"y\": 0\n    },\n    {\n      \"row\": \"B\",\n      \"number\": 1,\n      \"label\": \"B1\",\n      \"type\": \"gold\",\n      \"isBlocked\": false,\n      \"x\": 0,\n      \"y\": 1\n    }\n  ]\n}",
-                                    "options": {
-                                        "raw": {
-                                            "language": "json"
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "name": "Create Screen \u2014 Before Onboarding Complete (expect 400)",
-                            "event": [
-                                {
-                                    "listen": "test",
-                                    "script": {
-                                        "exec": [
-                                            "pm.test('Status 400', () => pm.response.to.have.status(400));"
-                                        ],
-                                        "type": "text/javascript"
-                                    }
-                                }
-                            ],
-                            "request": {
-                                "method": "POST",
-                                "header": [
-                                    {
-                                        "key": "Authorization",
-                                        "value": "Bearer {{ownerToken}}"
-                                    }
-                                ],
-                                "url": {
-                                    "raw": "{{baseUrl}}/theatres/{{ownedTheatreId}}/screens"
-                                },
-                                "body": {
-                                    "mode": "raw",
-                                    "raw": "{\n  \"name\": \"Screen 1\",\n  \"screenType\": \"STANDARD\",\n  \"seatLayout\": [\n    {\n      \"row\": \"A\",\n      \"number\": 1,\n      \"label\": \"A1\",\n      \"type\": \"silver\",\n      \"isBlocked\": false\n    }\n  ]\n}",
                                     "options": {
                                         "raw": {
                                             "language": "json"

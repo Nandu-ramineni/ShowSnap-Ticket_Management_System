@@ -667,6 +667,11 @@ router.post(
  *       - First call → `onboardingStatus: in_progress`
  *       - When all required fields are present → `onboardingStatus: completed` (automatic)
  *
+ *       On the transition to `completed`, a Theatre document is created from this
+ *       profile and its `_id` is written to `owner.ownedTheatre` — this is what
+ *       `POST /theatres/{theatreId}/screens` requires. Subsequent `PATCH /profile`
+ *       calls keep that Theatre document in sync (except `theatreName`, immutable).
+ *
  *       Required fields for completion:
  *       - `theatreInfo.theatreName`, `theatreInfo.contactPhone`, `theatreInfo.contactEmail`
  *       - `location.streetAddress`, `location.city`, `location.state`, `location.pincode`
@@ -754,6 +759,7 @@ router.post(
  *                   data:
  *                     owner:
  *                       onboardingStatus: completed
+ *                       ownedTheatre: 64f1a2b3c4d5e6f7a8b9c0e4
  *                     onboardingComplete: true
  *       400:
  *         $ref: '#/components/responses/ValidationError'

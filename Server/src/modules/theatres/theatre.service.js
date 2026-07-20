@@ -12,6 +12,76 @@ export const createTheatre = async (data, ownerId) => {
   return Theatre.create({ ...data, owner: ownerId });
 };
 
+// ─── TheatreOwner ↔ Theatre adapter ────────────────────────────────────────────
+// TheatreOwner.theatreInfo/location/amenities/cancellationPolicy are the
+// onboarding-shaped profile the owner fills in; Theatre is the canonical
+// record everything else (screens, showtimes, search, nearby) joins against.
+// The two schemas do not share field names or shapes 1:1 (e.g. location has
+// `streetAddress` vs `address`; amenities is a flags object vs an array of
+// {name, available}) — this mapper is the single place that bridges them.
+
+const AMENITY_LABELS = {
+  parking:          'Parking',
+  foodCourt:        'Food Court',
+  wheelchairAccess: 'Wheelchair Access',
+  mTicket:          'M-Ticket',
+  threeD:           '3D',
+  dolbySound:       'Dolby Sound',
+  fourDX:           '4DX',
+  reclinerSeats:    'Recliner Seats',
+  atm:              'ATM',
+  playing:          'Kids Play Area',
+  lounge:           'Lounge',
+};
+
+const mapOwnerAmenities = (amenities = {}) =>
+  Object.entries(AMENITY_LABELS).map(([key, name]) => ({
+    name,
+    available: !!amenities[key],
+  }));
+
+/** Builds Theatre-shaped data from a TheatreOwner's onboarding profile. */
+export const buildTheatreDataFromOwner = (owner) => ({
+  name: owner.theatreInfo?.theatreName,
+  isMultiplex: !!owner.isMultiplex,
+  location: {
+    address: owner.location?.streetAddress,
+    city:    owner.location?.city,
+    state:   owner.location?.state,
+    pincode: owner.location?.pincode,
+  },
+  amenities: mapOwnerAmenities(owner.amenities),
+  contactPhone: owner.theatreInfo?.contactPhone,
+  contactEmail: owner.theatreInfo?.contactEmail,
+  website: owner.theatreInfo?.website,
+  cancellationPolicy: {
+    allowed:          owner.cancellationPolicy?.allowCancellations ?? true,
+    cutoffHours:      owner.cancellationPolicy?.cutoffHours ?? 2,
+    refundPercentage: owner.cancellationPolicy?.refundPercentage ?? 100,
+  },
+});
+
+/**
+ * Creates the canonical Theatre document for a theatre owner whose onboarding
+ * has just completed. Called from theatreOwner.service.js#saveOnboarding and
+ * from the one-time backfill script (scripts/backfill-owned-theatre.js) for
+ * owners who completed onboarding before this fix existed.
+ */
+export const createTheatreForOwner = async (owner) =>
+  createTheatre(buildTheatreDataFromOwner(owner), owner._id);
+
+/**
+ * Writes an owner's post-onboarding profile edits through to their existing
+ * Theatre document. `name`/`slug` are deliberately excluded — theatreName is
+ * immutable after registration (enforced in theatreOwner.service.js#updateProfile).
+ */
+export const syncTheatreFromOwner = async (owner) => {
+  const data = buildTheatreDataFromOwner(owner);
+  delete data.name;
+  await Theatre.findByIdAndUpdate(owner.ownedTheatre, { $set: data });
+  await deleteCache(`${REDIS_KEYS.THEATRE_CACHE}${owner.ownedTheatre}`);
+};
+
 export const listTheatres = async ({ page, limit, skip, city, multiplex, search }) => {
   const filter = { isActive: true };
   if (city)      filter['location.city'] = new RegExp(city, 'i');

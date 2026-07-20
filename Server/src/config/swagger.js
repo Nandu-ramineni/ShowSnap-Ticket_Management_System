@@ -705,7 +705,11 @@ Webhook Confirms → Ticket Ready
             },
             isActive:     { type: 'boolean', example: true },
             rejectionReason: { type: 'string', nullable: true, example: 'Incomplete business registration documents. GST certificate missing.', description: 'Populated only when accountStatus is rejected' },
-            ownedTheatre: { $ref: '#/components/schemas/MongoId' },
+            ownedTheatre: {
+              allOf: [{ $ref: '#/components/schemas/MongoId' }],
+              nullable: true,
+              description: 'Auto-created and linked the moment onboarding completes (see PATCH /theatre-owner/onboarding). Null before that.',
+            },
             createdAt:    { type: 'string', format: 'date-time' },
             updatedAt:    { type: 'string', format: 'date-time' },
           },

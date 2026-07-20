@@ -4,6 +4,8 @@ import crypto from 'crypto';
 import ms from 'ms';
 import TheatreOwner, { SUPPORTED_DOC_TYPES } from './theatreOwner.model.js';
 import RefreshToken from './refreshToken.model.js';
+import Theatre from '../theatres/theatre.model.js';
+import * as theatreService from '../theatres/theatre.service.js';
 import { uploadBuffer, deleteResource } from '../../config/cloudinary.js';
 import ApiError from '../../utils/ApiError.js';
 import env from '../../config/env.js';
@@ -351,10 +353,34 @@ export const saveOnboarding = async (ownerId, updates) => {
     // Check if all required fields are now filled and auto-complete if so
     if (updated.isOnboardingComplete() &&
         updated.onboardingStatus !== ONBOARDING_STATUS.COMPLETED) {
+
+        // Provision the canonical Theatre document the moment onboarding
+        // completes. Everything downstream (screens, showtimes, search,
+        // nearby) joins against Theatre, not against this owner profile —
+        // without this, ownedTheatre stays null forever and screen creation
+        // has no theatre to attach to.
+        let createdTheatre = null;
+        if (!updated.ownedTheatre) {
+            createdTheatre = await theatreService.createTheatreForOwner(updated);
+            updated.ownedTheatre = createdTheatre._id;
+        }
+
         updated.onboardingStatus = ONBOARDING_STATUS.COMPLETED;
-        await updated.save();
+
+        try {
+            await updated.save();
+        } catch (err) {
+            // Mongo runs as a standalone instance here (see docker/docker-compose.yml —
+            // no replSet), so this can't be one atomic transaction. If the owner
+            // write fails after the Theatre was already created, delete it rather
+            // than leave an orphaned Theatre with no owner pointing back to it.
+            if (createdTheatre) {
+                await Theatre.findByIdAndDelete(createdTheatre._id).catch(() => {});
+            }
+            throw err;
+        }
     }
-    
+
 
     return {
         owner: updated.toPublicJSON(),
@@ -401,6 +427,13 @@ export const updateProfile = async (ownerId, updates) => {
         { new: true, runValidators: true }
     );
     if (!owner) throw ApiError.notFound('Theatre owner not found');
+
+    // Theatre is the canonical record for public-facing data (listings,
+    // search, nearby) — keep it in sync with the owner's profile edits.
+    if (owner.ownedTheatre) {
+        await theatreService.syncTheatreFromOwner(owner);
+    }
+
     await invalidateOwnerCache(ownerId);
     return owner.toPublicJSON();
 };
