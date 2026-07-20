@@ -234,6 +234,8 @@ Webhook Confirms → Ticket Ready
             landmark: { type: 'string',  example: 'Near Phoenix Mall' },
             coordinates: {
               type: 'object',
+              nullable: true,
+              description: 'Omitted entirely when not supplied — neither POST /theatres nor theatre-owner onboarding collect lat/lng today.',
               properties: {
                 type:        { type: 'string', example: 'Point' },
                 coordinates: { type: 'array', items: { type: 'number' }, example: [72.8258, 18.9947] },

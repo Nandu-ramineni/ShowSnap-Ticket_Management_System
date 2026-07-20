@@ -8,9 +8,16 @@ const locationSchema = new mongoose.Schema(
     pincode: { type: String, required: true },
     country: { type: String, default: 'India' },
     landmark: String,
+    // No `default: 'Point'` on purpose — coordinates are optional (neither this
+    // endpoint nor the theatre-owner onboarding flow collects lat/lng today).
+    // With a default, Mongoose still builds { type: 'Point', coordinates: [] }
+    // even when this whole field is never touched, and MongoDB's 2dsphere index
+    // rejects that as an invalid GeoJSON Point at insert time — this used to
+    // crash creation for every theatre with no coordinates, both here and via
+    // the onboarding flow (see theatre.service.js#createTheatreForOwner).
     coordinates: {
-      type: { type: String, enum: ['Point'], default: 'Point' },
-      coordinates: { type: [Number] },    // [lng, lat]
+      type: { type: String, enum: ['Point'] },
+      coordinates: { type: [Number], default: undefined },    // [lng, lat]
     },
   },
   { _id: false }
